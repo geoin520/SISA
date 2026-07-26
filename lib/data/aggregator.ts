@@ -162,7 +162,7 @@ function applyKev(
       kev.knownRansomwareCampaignUse === "Known" ? "Known" : "Unknown",
     sources: {
       ...vuln.sources,
-      CISA: `https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=${encodeURIComponent(
+      CISA: `https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=${encodeURIComponent(
         kev.cveID
       )}`,
     },
@@ -288,9 +288,16 @@ function cweToLabel(cwe: string): { zh: string; en: string } {
   switch (cwe) {
     case "CWE-787":
     case "CWE-119":
+    case "CWE-122":
+    case "CWE-908":
+    case "CWE-362":
+    case "CWE-502":
       return { zh: "RCE", en: "RCE" };
     case "CWE-269":
     case "CWE-266":
+    case "CWE-306":
+    case "CWE-1220":
+    case "CWE-416":
       return { zh: "EoP", en: "EoP" };
     case "CWE-400":
       return { zh: "DoS", en: "DoS" };
@@ -298,6 +305,8 @@ function cweToLabel(cwe: string): { zh: string; en: string } {
       return { zh: "信息泄露", en: "Info Disclosure" };
     case "CWE-345":
       return { zh: "欺骗", en: "Spoofing" };
+    case "CWE-693":
+      return { zh: "安全功能绕过", en: "Security Bypass" };
     default:
       return { zh: "其他", en: "Other" };
   }

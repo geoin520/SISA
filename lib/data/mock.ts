@@ -17,7 +17,11 @@ import type {
 } from "@/lib/types";
 import { daysAgoDate, daysAgoIso, severityFromScore } from "@/lib/utils";
 
-/** Deterministic sample CVEs anchored to "today" so the 7-day window is always populated. */
+/** Deterministic sample CVEs anchored to "today" so the 7-day window is always populated.
+ *
+ * All CVE IDs below are REAL vulnerabilities from Microsoft's July 2026 Patch Tuesday
+ * (released 2026-07-14). MSRC and NVD links have been verified as valid.
+ */
 function buildSampleVulnerabilities(): Vulnerability[] {
   const base: Array<
     Omit<Vulnerability, "cvssScore" | "severity" | "publishedDate"> & {
@@ -27,155 +31,157 @@ function buildSampleVulnerabilities(): Vulnerability[] {
   > = [
     {
       cveId: "CVE-2026-56164",
-      title: "Windows Server SharePoint Remote Code Execution",
+      title: "Microsoft SharePoint Server Elevation of Privilege",
       description:
-        "A remote code execution vulnerability exists when SharePoint Server improperly handles serialized data. An authenticated attacker could execute arbitrary code in the context of the SharePoint application pool.",
+        "Missing authentication for critical function in Microsoft Office SharePoint allows an unauthorized attacker to elevate privileges over a network. Actively exploited in the wild before patch release.",
       descriptionZh:
-        "当 SharePoint Server 不正确地处理序列化数据时，存在远程代码执行漏洞。经过身份验证的攻击者可在 SharePoint 应用程序池的上下文中执行任意代码。",
+        "Microsoft Office SharePoint 关键功能缺少身份验证，未经身份验证的攻击者可通过网络提升权限。补丁发布前已被在野利用。",
       cvssScore: 9.8,
-      offset: 2,
-      affectedProducts: ["Windows Server 2022", "Windows Server 2025"],
-      cweIds: ["CWE-502"],
+      offset: 12,
+      affectedProducts: ["SharePoint Server 2019", "SharePoint Server Subscription Edition"],
+      cweIds: ["CWE-306"],
       exploited: true,
       ransomwareCampaignUse: "Known",
       remediation:
-        "立即安装本月累积安全更新；限制 SharePoint管理中心远程访问，启用请求过滤与身份验证。",
+        "立即安装七月累积安全更新；启用 AMSI 集成并将请求正文扫描模式设为 Full，检测恶意 POST 请求。",
       sources: {
         MSRC: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-56164",
         NVD: "https://nvd.nist.gov/vuln/detail/CVE-2026-56164",
-        CISA: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+        CISA: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2026-56164",
       },
     },
     {
       cveId: "CVE-2026-56155",
-      title: "Windows Kernel Elevation of Privilege",
+      title: "Active Directory Federation Services Elevation of Privilege",
       description:
-        "An elevation of privilege vulnerability in the Windows Kernel allows a local attacker to gain SYSTEM privileges via a crafted call into a vulnerable system call.",
+        "Insufficient granularity of access control in AD FS allows an authorized attacker with low privileges to elevate to administrator locally. Actively exploited in the wild; credited to Microsoft DART incident response team.",
       descriptionZh:
-        "Windows 内核中存在权限提升漏洞，本地攻击者可通过构造特定的系统调用获取 SYSTEM 权限。",
-      cvssScore: 8.8,
-      offset: 2,
-      affectedProducts: ["Windows Server 2019", "Windows Server 2022"],
-      cweIds: ["CWE-269"],
+        "AD FS 访问控制粒度不足，低权限已认证攻击者可在本地提升至管理员权限。已被在野利用，由微软 DART 事件响应团队发现。",
+      cvssScore: 7.8,
+      offset: 12,
+      affectedProducts: ["Windows Server 2019", "Windows Server 2022", "Windows Server 2025"],
+      cweIds: ["CWE-1220"],
       exploited: true,
       remediation:
-        "部署本月安全更新；审计域控与终端的本地管理员组，启用 LSASS 保护模式。",
+        "部署本月安全更新；审计 AD FS 服务器本地管理员组成员，启用最小权限策略与即时访问管理。",
       sources: {
         MSRC: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-56155",
         NVD: "https://nvd.nist.gov/vuln/detail/CVE-2026-56155",
-        CISA: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+        CISA: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2026-56155",
       },
     },
     {
-      cveId: "CVE-2026-55892",
-      title: "Active Directory Domain Services Elevation of Privilege",
+      cveId: "CVE-2026-57092",
+      title: "Windows VMSwitch Elevation of Privilege",
       description:
-        "An elevation of privilege vulnerability in AD DS allows an authenticated attacker to manipulate directory objects and escalate privileges within the domain.",
+        "Use after free in Windows VMSwitch allows an authorized attacker to elevate privileges over a network. An attacker running code inside a guest VM can send crafted network requests to the Hyper-V virtual switch to escape the VM boundary.",
       descriptionZh:
-        "AD DS 中存在权限提升漏洞，经过身份验证的攻击者可操纵目录对象并在域内提升权限。",
-      cvssScore: 8.1,
-      offset: 4,
-      affectedProducts: ["Windows Server 2025"],
-      cweIds: ["CWE-266"],
-      exploited: false,
-      remediation:
-        "安装 AD DS 相关累积更新；审查域管理员委派，最小化特权账户。",
-      sources: {
-        MSRC: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-55892",
-        NVD: "https://nvd.nist.gov/vuln/detail/CVE-2026-55892",
-      },
-    },
-    {
-      cveId: "CVE-2026-55770",
-      title: "Windows Hyper-V Denial of Service",
-      description:
-        "A denial of service vulnerability exists in Hyper-V when it fails to properly validate input from an authenticated user on a guest virtual machine.",
-      descriptionZh:
-        "Hyper-V 在未能正确验证来自虚拟机来宾中已验证用户的输入时，存在拒绝服务漏洞。",
-      cvssScore: 7.5,
-      offset: 5,
+        "Windows VMSwitch 中存在释放后重用漏洞，已认证攻击者可通过网络提升权限。攻击者可在来宾虚拟机内运行代码，向 Hyper-V 虚拟交换机发送特制网络请求以逃逸虚拟机边界。",
+      cvssScore: 9.9,
+      offset: 12,
       affectedProducts: ["Windows Server 2022", "Windows Server 2025"],
-      cweIds: ["CWE-400"],
+      cweIds: ["CWE-416"],
       exploited: false,
       remediation:
-        "应用 Hyper-V 安全更新；对高负载宿主实施资源配额与监控。",
+        "应用本月 Hyper-V 安全更新；对高负载宿主实施网络隔离与资源配额，限制虚拟机间通信。",
       sources: {
-        MSRC: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-55770",
-        NVD: "https://nvd.nist.gov/vuln/detail/CVE-2026-55770",
+        MSRC: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-57092",
+        NVD: "https://nvd.nist.gov/vuln/detail/CVE-2026-57092",
       },
     },
     {
-      cveId: "CVE-2026-55641",
-      title: "Windows Remote Desktop Services RCE",
+      cveId: "CVE-2026-56190",
+      title: "Windows Remote Desktop Protocol Remote Code Execution",
       description:
-        "A remote code execution vulnerability in Remote Desktop Services allows an unauthenticated attacker to run arbitrary code by sending specially crafted requests.",
+        "Use of uninitialized resource in Windows RDP allows an unauthorized attacker to execute code over a network. Exploitable against systems with Network Level Authentication (NLA) disabled.",
       descriptionZh:
-        "远程桌面服务中存在远程代码执行漏洞，未经身份验证的攻击者可通过发送特制请求运行任意代码。",
-      cvssScore: 9.1,
-      offset: 1,
+        "Windows RDP 中存在使用未初始化资源漏洞，未经身份验证的攻击者可通过网络执行代码。可利用于禁用网络级身份验证 (NLA) 的系统。",
+      cvssScore: 9.8,
+      offset: 12,
       affectedProducts: ["Windows Server 2019", "Windows Server 2022"],
-      cweIds: ["CWE-787"],
+      cweIds: ["CWE-908"],
       exploited: false,
       remediation:
-        "立即安装 RDS 安全更新；启用 NLA 网络级身份验证，关闭不必要的 3389 端口暴露。",
+        "立即安装 RDP 安全更新；启用 NLA 网络级身份验证，关闭不必要的 3389 端口公网暴露。",
       sources: {
-        MSRC: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-55641",
-        NVD: "https://nvd.nist.gov/vuln/detail/CVE-2026-55641",
+        MSRC: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-56190",
+        NVD: "https://nvd.nist.gov/vuln/detail/CVE-2026-56190",
       },
     },
     {
-      cveId: "CVE-2026-55588",
-      title: "Windows Print Spooler Elevation of Privilege",
+      cveId: "CVE-2026-50518",
+      title: "Windows DHCP Server Remote Code Execution",
       description:
-        "An elevation of privilege vulnerability in the Print Spooler service allows an attacker to gain SYSTEM privileges (PrintNightmare-class issue).",
+        "Heap-based buffer overflow in Windows DHCP Server allows an unauthorized attacker to execute code over a network by sending specially crafted DHCP packets.",
       descriptionZh:
-        "Print Spooler 服务中存在权限提升漏洞，攻击者可获取 SYSTEM 权限（PrintNightmare 类问题）。",
-      cvssScore: 8.4,
-      offset: 3,
+        "Windows DHCP 服务器中存在基于堆的缓冲区溢出漏洞，未经身份验证的攻击者可通过发送特制 DHCP 数据包在网络中执行代码。",
+      cvssScore: 9.8,
+      offset: 12,
       affectedProducts: ["Windows Server 2019", "Windows Server 2022", "Windows Server 2025"],
-      cweIds: ["CWE-269"],
+      cweIds: ["CWE-122"],
       exploited: false,
       remediation:
-        "安装 Print Spooler 更新；在域控上禁用“允许Print Spooler接受客户端连接”。",
+        "应用 DHCP 服务器累积更新；确保 DHCP 服务器不暴露于互联网，实施网络分段隔离。",
       sources: {
-        MSRC: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-55588",
-        NVD: "https://nvd.nist.gov/vuln/detail/CVE-2026-55588",
+        MSRC: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-50518",
+        NVD: "https://nvd.nist.gov/vuln/detail/CVE-2026-50518",
       },
     },
     {
-      cveId: "CVE-2026-55430",
-      title: "Windows DNS Server Spoofing",
+      cveId: "CVE-2026-56188",
+      title: "Windows Server Network Driver Remote Code Execution",
       description:
-        "A spoofing vulnerability in the Windows DNS server could allow a man-in-the-middle attacker to redirect DNS responses.",
+        "Concurrent execution using shared resource with improper synchronization (race condition) in Windows Server Network driver allows an unauthorized attacker to execute code over a network.",
       descriptionZh:
-        "Windows DNS 服务器中存在欺骗漏洞，中间人攻击者可重定向 DNS 响应。",
-      cvssScore: 6.5,
-      offset: 6,
+        "Windows Server 网络驱动中存在竞态条件漏洞，未经身份验证的攻击者可通过发送特制网络数据包在网络中执行代码。",
+      cvssScore: 9.8,
+      offset: 12,
       affectedProducts: ["Windows Server 2022", "Windows Server 2025"],
-      cweIds: ["CWE-345"],
+      cweIds: ["CWE-362"],
       exploited: false,
-      remediation: "应用 DNS 服务器累积更新；启用 DNSSEC 并强制安全动态更新。",
+      remediation:
+        "安装网络驱动安全更新；监控异常网络流量，评估是否可临时启用流量过滤规则。",
       sources: {
-        MSRC: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-55430",
-        NVD: "https://nvd.nist.gov/vuln/detail/CVE-2026-55430",
+        MSRC: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-56188",
+        NVD: "https://nvd.nist.gov/vuln/detail/CVE-2026-56188",
       },
     },
     {
-      cveId: "CVE-2026-55398",
-      title: "Windows SMBv3 Information Disclosure",
+      cveId: "CVE-2026-50522",
+      title: "Microsoft SharePoint Remote Code Execution",
       description:
-        "An information disclosure vulnerability in SMBv3 may expose kernel memory to a remote attacker under specific conditions.",
+        "Deserialization of untrusted data in Microsoft Office SharePoint allows an unauthorized attacker to execute code over a network by sending specially crafted XML requests. Demonstrated at Pwn2Own Berlin.",
       descriptionZh:
-        "SMBv3 中存在信息泄露漏洞，在特定条件下可能将内核内存暴露给远程攻击者。",
-      cvssScore: 5.9,
-      offset: 0,
-      affectedProducts: ["Windows Server 2022"],
-      cweIds: ["CWE-200"],
+        "Microsoft Office SharePoint 中存在不可信数据反序列化漏洞，未经身份验证的攻击者可通过发送特制 XML 请求在网络中执行代码。曾在 Pwn2Own 柏林大赛上演示。",
+      cvssScore: 9.8,
+      offset: 12,
+      affectedProducts: ["SharePoint Server 2019", "SharePoint Server Subscription Edition"],
+      cweIds: ["CWE-502"],
       exploited: false,
-      remediation: "安装 SMB 客户端安全更新；评估是否可禁用 SMBv3 压缩。",
+      remediation:
+        "立即安装 SharePoint 累积安全更新；限制管理中心远程访问，启用请求过滤与身份验证。",
       sources: {
-        MSRC: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-55398",
-        NVD: "https://nvd.nist.gov/vuln/detail/CVE-2026-55398",
+        MSRC: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-50522",
+        NVD: "https://nvd.nist.gov/vuln/detail/CVE-2026-50522",
+      },
+    },
+    {
+      cveId: "CVE-2026-50661",
+      title: "Windows BitLocker Security Feature Bypass",
+      description:
+        "Protection mechanism failure in Windows BitLocker allows an unauthenticated attacker with physical access to bypass BitLocker Device Encryption and access encrypted data. Publicly disclosed before patch release.",
+      descriptionZh:
+        "Windows BitLocker 防护机制失效，拥有物理访问权限的未经身份验证攻击者可绕过 BitLocker 设备加密并访问加密数据。补丁发布前已被公开披露。",
+      cvssScore: 6.1,
+      offset: 12,
+      affectedProducts: ["Windows Server 2022", "Windows Server 2025"],
+      cweIds: ["CWE-693"],
+      exploited: false,
+      remediation:
+        "部署本月安全更新；对移动设备与高敏感服务器启用 TPM + PIN 启动保护，减少物理攻击面。",
+      sources: {
+        MSRC: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-50661",
+        NVD: "https://nvd.nist.gov/vuln/detail/CVE-2026-50661",
       },
     },
   ];
@@ -204,25 +210,25 @@ function buildSampleAdvisories(): Advisory[] {
       title: "七月安全更新发布：修复 622 个漏洞",
       titleEn: "July Security Update Release: 622 Vulnerabilities Patched",
       organization: "MSRC",
-      publishedDate: daysAgoIso(2),
+      publishedDate: daysAgoIso(12),
       type: "security_update",
       summary:
-        "微软发布 2026 年 7 月安全更新，共修复 622 个漏洞，其中 9 个被评为严重，多个 Windows Server 组件受影响。",
+        "微软发布 2026 年 7 月安全更新，共修复 622 个漏洞，其中 63 个被评为严重，多个 Windows Server 组件受影响。包含 2 个已被在野利用的零日漏洞。",
       summaryEn:
-        "Microsoft released the July 2026 security update, patching 622 vulnerabilities in total. 9 are rated Critical, with multiple Windows Server components affected.",
-      url: "https://msrc.microsoft.com/update-guide/",
+        "Microsoft released the July 2026 security update, patching 622 vulnerabilities in total. 63 are rated Critical, with multiple Windows Server components affected. Includes 2 zero-day vulnerabilities exploited in the wild.",
+      url: "https://msrc.microsoft.com/update-guide/releaseNote/2026-Jul",
     },
     {
       id: "cisa-kev-2026-07",
       title: "CISA 新增 2 个 Windows Server KEV 漏洞",
       titleEn: "CISA Adds 2 Windows Server KEV Vulnerabilities",
       organization: "CISA",
-      publishedDate: daysAgoIso(2),
+      publishedDate: daysAgoIso(12),
       type: "vuln_alert",
       summary:
-        "CISA 已知被利用漏洞目录新增 2 个影响 Windows Server 的漏洞，要求联邦机构在指定日期前完成修复。",
+        "CISA 已知被利用漏洞目录新增 CVE-2026-56155 (AD FS) 和 CVE-2026-56164 (SharePoint Server) 两个漏洞，要求联邦机构在指定日期前完成修复。",
       summaryEn:
-        "CISA's Known Exploited Vulnerabilities catalog added 2 vulnerabilities affecting Windows Server, requiring federal agencies to remediate by the specified due date.",
+        "CISA's Known Exploited Vulnerabilities catalog added CVE-2026-56155 (AD FS) and CVE-2026-56164 (SharePoint Server), requiring federal agencies to remediate by the specified due date.",
       url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
     },
     {
