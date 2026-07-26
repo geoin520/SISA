@@ -14,7 +14,7 @@ import type {
   ThreatLandscape,
   Vulnerability,
 } from "@/lib/types";
-import { withinLastDays, severityFromScore, daysAgoDate } from "@/lib/utils";
+import { withinLastDays, withinLastHours, severityFromScore, daysAgoDate } from "@/lib/utils";
 import { fetchMsrcUpdates, msrcToVulnerabilities } from "@/lib/data/msrc";
 import { enrichFromNvd, applyNvdEnrichment, fetchRecentNvdCves } from "@/lib/data/nvd";
 import { fetchKevMap, fetchCisaKevAdvisories } from "@/lib/data/cisa";
@@ -306,4 +306,27 @@ function cweToLabel(cwe: string): { zh: string; en: string } {
 /** Force a refresh (used by the cron endpoint). */
 export async function refreshData(): Promise<AggregatedData> {
   return getAggregatedData(true);
+}
+
+/**
+ * Return a 24-hour digest payload: aggregated data filtered to vulnerabilities
+ * and advisories published within the last 24 hours, with stats recomputed.
+ * Used by the daily email digest cron (09:00 Beijing time).
+ */
+export async function getDigestData24h(): Promise<AggregatedData> {
+  const full = await getAggregatedData();
+  const vulns24h = full.vulnerabilities.filter((v) =>
+    withinLastHours(v.publishedDate, 24)
+  );
+  const advisories24h = full.advisories.filter((a) =>
+    withinLastHours(a.publishedDate, 24)
+  );
+  return {
+    stats: computeStats(vulns24h),
+    vulnerabilities: vulns24h,
+    advisories: advisories24h,
+    knowledge: full.knowledge,
+    landscape: full.landscape,
+    generatedAt: new Date().toISOString(),
+  };
 }

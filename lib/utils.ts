@@ -57,6 +57,13 @@ export function withinLastDays(iso: string, days: number): boolean {
   return t >= Date.now() - days * 24 * 60 * 60 * 1000;
 }
 
+/** True when the given ISO date falls within the last `hours` hours. */
+export function withinLastHours(iso: string, hours: number): boolean {
+  const t = new Date(iso).getTime();
+  if (isNaN(t)) return false;
+  return t >= Date.now() - hours * 60 * 60 * 1000;
+}
+
 /** Map a CVSS score to a severity bucket. */
 export function severityFromScore(score: number): "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" {
   if (score >= 9) return "CRITICAL";

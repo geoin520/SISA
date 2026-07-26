@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 
 /**
  * POST /api/subscribe — demo subscription endpoint.
- * In production this would persist the email to Vercel KV / a DB and enqueue
- * the daily digest job. Here we just validate and acknowledge.
+ * In production this would persist the email to Vercel KV / a DB.
+ * Subscribers receive a daily digest at 09:00 Beijing time (01:00 UTC)
+ * covering the past 24 hours. There is NO real-time push for critical
+ * vulnerabilities — the digest is the sole notification channel.
  */
 export async function POST(request: Request) {
   let email: string;

@@ -74,7 +74,7 @@ export function DailyDigestEmail({
               <KpiCell label="待安装" value={data.stats.pendingPatches} accent={COLORS.navy} />
             </Section>
             <Text style={mutedText}>
-              近 7 天共监测 {data.stats.total} 个漏洞，其中 {data.stats.exploitedCount} 个已发现在野利用。
+              近 24 小时共监测 {data.stats.total} 个漏洞，其中 {data.stats.exploitedCount} 个已发现在野利用。
             </Text>
           </Section>
 

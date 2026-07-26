@@ -40,7 +40,7 @@ SISA.ing is a security intelligence aggregation platform focused on Windows Serv
 - **🚨 Advisories & Alerts Center** — Aggregated security advisories from MSRC, CISA, and CNVD
 - **📚 Knowledge Base** — Curated KB articles, security baselines, and hardening guides
 - **📈 Threat Landscape** — 7-day vulnerability trend charts, type distribution, and AI-style key insights
-- **🔔 Email Subscriptions** — Daily security digest via React Email templates
+- **🔔 Email Subscriptions** — Daily 24-hour security digest sent at 09:00 (Beijing time) via React Email templates
 - **🌍 Bilingual (ZH/EN)** — Full internationalization with automatic locale detection
 - **⚡ ISR + Cron Jobs** — Hourly ISR revalidation and scheduled data refresh via Vercel Cron
 
@@ -91,7 +91,9 @@ SISA/
 │   │   ├── trends/            # Trends API
 │   │   ├── email/preview/     # Email template preview
 │   │   ├── subscribe/         # Email subscription
-│   │   └── cron/fetch-data/   # Cron job endpoint
+│   │   └── cron/
+│   │       ├── fetch-data/    # Data refresh cron (06:00/12:00/18:00 UTC)
+│   │       └── send-digest/   # Daily digest cron (01:00 UTC = 09:00 Beijing)
 │   ├── sitemap.ts / robots.ts # SEO
 │   └── layout.tsx             # Root layout
 ├── components/
@@ -123,7 +125,12 @@ SISA/
 
 ### ⏰ Scheduled Tasks
 
-Vercel Cron triggers `/api/cron/fetch-data` at 06:00, 12:00, and 18:00 (UTC) to refresh the data cache. The endpoint is authenticated via `CRON_SECRET`.
+| Cron | Schedule (UTC) | Endpoint | Purpose |
+|------|----------------|----------|---------|
+| Data refresh | `0 6,12,18 * * *` | `/api/cron/fetch-data` | Refresh the aggregated data cache |
+| Daily digest | `0 1 * * *` | `/api/cron/send-digest` | Send 24-hour security digest to subscribers (09:00 Beijing time) |
+
+Both endpoints are authenticated via `CRON_SECRET`. The daily digest covers only the past 24 hours — there is **no** real-time push for critical vulnerabilities.
 
 ### 🔧 Environment Variables
 
@@ -167,7 +174,7 @@ SISA.ing 是一个专注于 Windows Server 的安全情报聚合平台。它自�
 - **🚨 预警与通告中心** — 聚合 MSRC、CISA、CNVD 安全通告
 - **📚 知识库与最佳实践** — KB 文章、安全基线、加固指南
 - **📈 态势分析** — 7 天漏洞趋势图、类型分布、AI 洞察总结
-- **🔔 邮件订阅** — 基于 React Email 的日报模板
+- **🔔 邮件订阅** — 每日 09:00（北京时间）发送前 24 小时安全态势汇总，基于 React Email 模板
 - **🌍 中英双语** — 完整国际化，自动语言检测
 - **⚡ ISR + 定时任务** — 每小时 ISR 重新验证 + Vercel Cron 定时数据刷新
 
@@ -196,7 +203,12 @@ npm run dev
 
 ### ⏰ 定时任务
 
-Vercel Cron 在 UTC 06:00 / 12:00 / 18:00 触发 `/api/cron/fetch-data` 刷新缓存，通过 `CRON_SECRET` 鉴权。
+| 定时任务 | UTC 时间 | 接口 | 用途 |
+|----------|----------|------|------|
+| 数据刷新 | `0 6,12,18 * * *` | `/api/cron/fetch-data` | 刷新聚合数据缓存 |
+| 每日日报 | `0 1 * * *` | `/api/cron/send-digest` | 向订阅者发送前 24 小时安全态势汇总（北京时间 09:00） |
+
+两个接口均通过 `CRON_SECRET` 鉴权。每日日报仅汇总过去 24 小时的数据，**不**进行高危漏洞实时推送。
 
 ### 🔧 环境变量
 
@@ -210,7 +222,7 @@ Vercel Cron 在 UTC 06:00 / 12:00 / 18:00 触发 `/api/cron/fetch-data` 刷新�
 
 ### 📧 邮件预览
 
-访问 `GET /api/email/preview` 可查看日报邮件 HTML 渲染效果。
+访问 `GET /api/email/preview` 可查看前 24 小时安全态势日报邮件的 HTML 渲染效果。
 
 ### 🤝 贡献
 

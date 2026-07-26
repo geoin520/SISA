@@ -129,7 +129,7 @@ export const dictionaries = {
     },
     subscribe: {
       title: "订阅安全态势日报",
-      description: "每日 09:00 收到前 24 小时 Windows Server 安全态势汇总，高危漏洞实时预警。",
+      description: "每日 09:00 收到前 24 小时 Windows Server 安全态势汇总。",
       emailLabel: "邮箱地址",
       emailPlaceholder: "you@example.com",
       submit: "立即订阅",
@@ -271,7 +271,7 @@ export const dictionaries = {
     subscribe: {
       title: "Subscribe to the daily security digest",
       description:
-        "Receive a 24-hour Windows Server security summary at 09:00 daily, with real-time alerts for critical vulnerabilities.",
+        "Receive a 24-hour Windows Server security summary at 09:00 daily.",
       emailLabel: "Email address",
       emailPlaceholder: "you@example.com",
       submit: "Subscribe now",
