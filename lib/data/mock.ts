@@ -37,7 +37,7 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "Microsoft Office SharePoint 关键功能缺少身份验证，未经身份验证的攻击者可通过网络提升权限。补丁发布前已被在野利用。",
       cvssScore: 9.8,
-      offset: 12,
+      offset: 2,
       affectedProducts: ["SharePoint Server 2019", "SharePoint Server Subscription Edition"],
       cweIds: ["CWE-306"],
       exploited: true,
@@ -58,7 +58,7 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "AD FS 访问控制粒度不足，低权限已认证攻击者可在本地提升至管理员权限。已被在野利用，由微软 DART 事件响应团队发现。",
       cvssScore: 7.8,
-      offset: 12,
+      offset: 3,
       affectedProducts: ["Windows Server 2019", "Windows Server 2022", "Windows Server 2025"],
       cweIds: ["CWE-1220"],
       exploited: true,
@@ -78,7 +78,7 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "Windows VMSwitch 中存在释放后重用漏洞，已认证攻击者可通过网络提升权限。攻击者可在来宾虚拟机内运行代码，向 Hyper-V 虚拟交换机发送特制网络请求以逃逸虚拟机边界。",
       cvssScore: 9.9,
-      offset: 12,
+      offset: 4,
       affectedProducts: ["Windows Server 2022", "Windows Server 2025"],
       cweIds: ["CWE-416"],
       exploited: false,
@@ -97,7 +97,7 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "Windows RDP 中存在使用未初始化资源漏洞，未经身份验证的攻击者可通过网络执行代码。可利用于禁用网络级身份验证 (NLA) 的系统。",
       cvssScore: 9.8,
-      offset: 12,
+      offset: 5,
       affectedProducts: ["Windows Server 2019", "Windows Server 2022"],
       cweIds: ["CWE-908"],
       exploited: false,
@@ -116,7 +116,7 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "Windows DHCP 服务器中存在基于堆的缓冲区溢出漏洞，未经身份验证的攻击者可通过发送特制 DHCP 数据包在网络中执行代码。",
       cvssScore: 9.8,
-      offset: 12,
+      offset: 6,
       affectedProducts: ["Windows Server 2019", "Windows Server 2022", "Windows Server 2025"],
       cweIds: ["CWE-122"],
       exploited: false,
@@ -135,7 +135,7 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "Windows Server 网络驱动中存在竞态条件漏洞，未经身份验证的攻击者可通过发送特制网络数据包在网络中执行代码。",
       cvssScore: 9.8,
-      offset: 12,
+      offset: 2,
       affectedProducts: ["Windows Server 2022", "Windows Server 2025"],
       cweIds: ["CWE-362"],
       exploited: false,
@@ -154,7 +154,7 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "Microsoft Office SharePoint 中存在不可信数据反序列化漏洞，未经身份验证的攻击者可通过发送特制 XML 请求在网络中执行代码。曾在 Pwn2Own 柏林大赛上演示。",
       cvssScore: 9.8,
-      offset: 12,
+      offset: 3,
       affectedProducts: ["SharePoint Server 2019", "SharePoint Server Subscription Edition"],
       cweIds: ["CWE-502"],
       exploited: false,
@@ -173,7 +173,7 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "Windows BitLocker 防护机制失效，拥有物理访问权限的未经身份验证攻击者可绕过 BitLocker 设备加密并访问加密数据。补丁发布前已被公开披露。",
       cvssScore: 6.1,
-      offset: 12,
+      offset: 4,
       affectedProducts: ["Windows Server 2022", "Windows Server 2025"],
       cweIds: ["CWE-693"],
       exploited: false,
@@ -210,7 +210,7 @@ function buildSampleAdvisories(): Advisory[] {
       title: "七月安全更新发布：修复 622 个漏洞",
       titleEn: "July Security Update Release: 622 Vulnerabilities Patched",
       organization: "MSRC",
-      publishedDate: daysAgoIso(12),
+      publishedDate: daysAgoIso(2),
       type: "security_update",
       summary:
         "微软发布 2026 年 7 月安全更新，共修复 622 个漏洞，其中 63 个被评为严重，多个 Windows Server 组件受影响。包含 2 个已被在野利用的零日漏洞。",
@@ -223,7 +223,7 @@ function buildSampleAdvisories(): Advisory[] {
       title: "CISA 新增 2 个 Windows Server KEV 漏洞",
       titleEn: "CISA Adds 2 Windows Server KEV Vulnerabilities",
       organization: "CISA",
-      publishedDate: daysAgoIso(12),
+      publishedDate: daysAgoIso(3),
       type: "vuln_alert",
       summary:
         "CISA 已知被利用漏洞目录新增 CVE-2026-56155 (AD FS) 和 CVE-2026-56164 (SharePoint Server) 两个漏洞，要求联邦机构在指定日期前完成修复。",
