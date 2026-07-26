@@ -244,17 +244,17 @@ function buildSampleAdvisories(): Advisory[] {
 function buildSampleKnowledge(): KnowledgeArticle[] {
   return [
     {
-      id: "kb-501xxxx",
-      title: "KB501xxxx: Windows Server 2022 累积安全更新",
-      titleEn: "KB501xxxx: Windows Server 2022 Cumulative Security Update",
+      id: "kb-5082142",
+      title: "KB5082142: Windows Server 2022 累积安全更新",
+      titleEn: "KB5082142: Windows Server 2022 Cumulative Security Update",
       type: "kb_article",
       updatedAt: daysAgoIso(2),
       summary:
-        "介绍本月 Windows Server 2022 累积安全更新内容、已知问题及部署步骤，含补丁回滚指引。",
+        "介绍 2026 年 4 月 Windows Server 2022 累积安全更新（KB5082142，OS 内部版本 20348.5020），包含安全修复、已知问题及部署步骤。",
       summaryEn:
-        "Covers this month's Windows Server 2022 cumulative security update contents, known issues, and deployment steps, including patch rollback guidance.",
+        "Covers the April 2026 Windows Server 2022 cumulative security update (KB5082142, OS build 20348.5020), including security fixes, known issues, and deployment steps.",
       relatedProducts: ["Windows Server 2022"],
-      url: "https://support.microsoft.com/",
+      url: "https://support.microsoft.com/en-us/servicing/os/windows-server/2026/04/april-14-2026-kb5082142-os-build-20348-5020",
     },
     {
       id: "baseline-2025",
@@ -263,11 +263,11 @@ function buildSampleKnowledge(): KnowledgeArticle[] {
       type: "security_baseline",
       updatedAt: daysAgoIso(5),
       summary:
-        "面向 Windows Server 2025 的官方安全基线，涵盖账户策略、审计策略、事件日志与服务最小化等 200+ 项配置。",
+        "面向 Windows Server 2025 的官方安全基线，通过 OSConfig 部署，涵盖账户策略、审计策略、事件日志与服务最小化等 200+ 项配置。",
       summaryEn:
-        "Official security baseline for Windows Server 2025, covering 200+ settings including account policies, audit policies, event logging, and service minimization.",
+        "Official security baseline for Windows Server 2025, deployed via OSConfig, covering 200+ settings including account policies, audit policies, event logging, and service minimization.",
       relatedProducts: ["Windows Server 2025"],
-      url: "https://learn.microsoft.com/windows-server/security/security-baselines",
+      url: "https://learn.microsoft.com/en-us/windows-server/security/osconfig/osconfig-how-to-configure-security-baselines",
     },
     {
       id: "hardening-ports",
@@ -276,11 +276,11 @@ function buildSampleKnowledge(): KnowledgeArticle[] {
       type: "hardening_guide",
       updatedAt: daysAgoIso(7),
       summary:
-        "梳理 Windows Server 常见暴露端口与服务（SMB/RDP/WinRM），提供分角色关闭清单与合规验证脚本。",
+        "梳理 Windows Server 常见系统服务与暴露端口（SMB/RDP/WinRM），提供微软官方分角色关闭清单与安全配置建议。",
       summaryEn:
-        "Reviews common exposed Windows Server ports and services (SMB/RDP/WinRM), providing role-based disablement checklists and compliance verification scripts.",
+        "Reviews common Windows Server system services and exposed ports (SMB/RDP/WinRM), providing official Microsoft role-based disablement checklists and security configuration guidance.",
       relatedProducts: ["Windows Server 2019", "Windows Server 2022", "Windows Server 2025"],
-      url: "https://learn.microsoft.com/windows-server/security/security-baselines",
+      url: "https://learn.microsoft.com/en-us/windows-server/security/windows-services/security-guidelines-for-disabling-system-services-in-windows-server",
     },
   ];
 }
