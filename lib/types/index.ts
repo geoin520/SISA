@@ -28,7 +28,9 @@ export interface Vulnerability {
   exploited: boolean;
   /** Known ransomware campaign use, when available. */
   ransomwareCampaignUse?: "Known" | "Unknown";
-  publishedDate: string; // ISO date
+  publishedDate: string; // ISO date — original publication (e.g. Patch Tuesday)
+  /** Last time this record was updated by any source (NVD enrichment, CISA KEV add, etc.). */
+  updatedAt?: string; // ISO date
   /** Prioritized remediation guidance derived by the aggregator. */
   remediation: string;
   /** Original official links keyed by source. */
@@ -44,6 +46,8 @@ export interface Advisory {
   titleEn?: string;
   organization: DataSource;
   publishedDate: string; // ISO date
+  /** Last time this advisory was updated by the issuing organization. */
+  updatedAt?: string; // ISO date
   type: AdvisoryType;
   summary: string;
   /** English translation of the summary, when available. */

@@ -40,17 +40,17 @@ export const dictionaries = {
         title: "漏洞与补丁库",
         subtitle: "Vulnerability & Patch Database",
         description:
-          "集成微软安全更新指南等权威数据，自动追踪 CVE 漏洞与月度补丁。以下为近 7 天内新增的高危漏洞（CVSS 评分 ≥ 7.0），按风险优先级排序。",
+          "集成微软安全更新指南等权威数据，自动追踪 CVE 漏洞与月度补丁。以下为近 7 天内有更新的高危漏洞（CVSS 评分 ≥ 7.0），按风险优先级排序。",
         viewAll: "查看全部漏洞",
         empty:
-          "近 7 天内未检测到影响 Windows Server 的新增高危漏洞。系统将持续监控，如有新的安全通告将第一时间更新。建议您定期访问本页面或订阅邮件通知。",
+          "近 7 天内未检测到影响 Windows Server 的漏洞更新。系统将持续监控，如有新的安全通告将第一时间更新。建议您定期访问本页面或订阅邮件通知。",
         source: "数据来源：Microsoft Security Response Center · NIST NVD · CISA KEV Catalog · 点击「详情」查看官方原始页面",
       },
       advisories: {
         title: "预警与通告中心",
         subtitle: "Advisories & Alerts Center",
         description:
-          "聚合来自 MSRC、CISA、国内 CERT 等机构的官方安全预警与通告。以下为近 7 天内发布的最新通告。",
+          "聚合来自 MSRC、CISA、国内 CERT 等机构的官方安全预警与通告。以下为近 7 天内发布或更新的最新通告。",
         viewAll: "查看全部通告",
         empty:
           "近 7 天内未收到来自官方机构的新安全通告。系统将持续监控各机构发布渠道，如有新的预警信息将第一时间推送。",
@@ -86,6 +86,7 @@ export const dictionaries = {
       affectedProducts: "影响范围",
       exploited: "利用状态",
       publishedDate: "发布日期",
+      updatedDate: "更新日期",
       remediation: "修复建议",
       actions: "操作",
       viewDetails: "查看详情",
@@ -95,6 +96,7 @@ export const dictionaries = {
       title: "通告标题",
       organization: "发布机构",
       publishedDate: "发布时间",
+      updatedDate: "更新时间",
       type: "通告类型",
       summary: "摘要",
       actions: "操作",
@@ -180,10 +182,10 @@ export const dictionaries = {
         title: "Vulnerability & Patch Database",
         subtitle: "Vulnerability & Patch Database",
         description:
-          "Integrates the Microsoft Security Update Guide and other authoritative sources to automatically track CVEs and monthly patches. Below are high-severity vulnerabilities (CVSS ≥ 7.0) added in the last 7 days, prioritized by risk.",
+          "Integrates the Microsoft Security Update Guide and other authoritative sources to automatically track CVEs and monthly patches. Below are high-severity vulnerabilities (CVSS ≥ 7.0) updated in the last 7 days, prioritized by risk.",
         viewAll: "View all vulnerabilities",
         empty:
-          "No new high-severity vulnerabilities affecting Windows Server were detected in the last 7 days. The system keeps monitoring and will update immediately when new advisories arrive. Visit this page regularly or subscribe to email alerts.",
+          "No vulnerability updates affecting Windows Server were detected in the last 7 days. The system keeps monitoring and will update immediately when new advisories arrive. Visit this page regularly or subscribe to email alerts.",
         source:
           "Sources: Microsoft Security Response Center · NIST NVD · CISA KEV Catalog · Click “Details” for the official page.",
       },
@@ -191,7 +193,7 @@ export const dictionaries = {
         title: "Advisories & Alerts Center",
         subtitle: "Advisories & Alerts Center",
         description:
-          "Aggregates official advisories from MSRC, CISA and domestic CERTs. Below are the latest advisories published in the last 7 days.",
+          "Aggregates official advisories from MSRC, CISA and domestic CERTs. Below are the latest advisories published or updated in the last 7 days.",
         viewAll: "View all advisories",
         empty:
           "No new official advisories in the last 7 days. The system keeps monitoring all publisher channels and will push new alerts immediately.",
@@ -227,6 +229,7 @@ export const dictionaries = {
       affectedProducts: "Affected Products",
       exploited: "Exploitation",
       publishedDate: "Published",
+      updatedDate: "Updated",
       remediation: "Remediation Guidance",
       actions: "Actions",
       viewDetails: "View Details",
@@ -236,6 +239,7 @@ export const dictionaries = {
       title: "Title",
       organization: "Organization",
       publishedDate: "Published",
+      updatedDate: "Updated",
       type: "Type",
       summary: "Summary",
       actions: "Actions",

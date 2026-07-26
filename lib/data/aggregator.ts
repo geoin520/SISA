@@ -43,20 +43,30 @@ async function aggregateData(): Promise<AggregatedData> {
   // --- Vulnerabilities ---------------------------------------------------
   const liveVulns = await collectLiveVulnerabilities();
   const mergedVulns = mergeVulnerabilities(sample.vulnerabilities, liveVulns);
-  const within7 = mergedVulns.filter((v) => withinLastDays(v.publishedDate, 7));
-  // Sort by risk: exploited first, then CVSS desc, then date desc.
+  // 7-day window filters on updatedAt (last source enrichment), not publishedDate
+  // (original Patch Tuesday), because a CVE published 12 days ago may still be
+  // active this week due to KEV additions or CVSS re-scoring.
+  const within7 = mergedVulns.filter((v) =>
+    withinLastDays(v.updatedAt ?? v.publishedDate, 7)
+  );
+  // Sort by risk: exploited first, then CVSS desc, then updatedAt desc.
   within7.sort(
     (a, b) =>
       Number(b.exploited) - Number(a.exploited) ||
       b.cvssScore - a.cvssScore ||
-      new Date(b.publishedDate).getTime() - new Date(a.publishedDate).getTime()
+      new Date(b.updatedAt ?? b.publishedDate).getTime() -
+        new Date(a.updatedAt ?? a.publishedDate).getTime()
   );
 
   // --- Advisories --------------------------------------------------------
   const liveAdvisories = await collectLiveAdvisories();
   const advisories = dedupeAdvisories([...liveAdvisories, ...sample.advisories])
-    .filter((a) => withinLastDays(a.publishedDate, 7))
-    .sort((a, b) => new Date(b.publishedDate).getTime() - new Date(a.publishedDate).getTime());
+    .filter((a) => withinLastDays(a.updatedAt ?? a.publishedDate, 7))
+    .sort(
+      (a, b) =>
+        new Date(b.updatedAt ?? b.publishedDate).getTime() -
+        new Date(a.updatedAt ?? a.publishedDate).getTime()
+    );
 
   // --- Stats -------------------------------------------------------------
   const stats = computeStats(within7);
@@ -114,6 +124,7 @@ async function collectLiveVulnerabilities(): Promise<Vulnerability[]> {
         cweIds: e.cweIds,
         exploited: kevMap.has(e.cveId),
         publishedDate: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         remediation: "",
         sources: { NVD: e.sourceUrl },
       });
@@ -133,12 +144,20 @@ function mergeVulnerabilities(sample: Vulnerability[], live: Vulnerability[]): V
     const existing = map.get(v.cveId);
     if (existing) {
       // Prefer live fields but keep sample descriptions/remediation when live is sparse.
+      // updatedAt: pick the most recent of the two (live enrichment may be newer).
+      const mergedUpdated =
+        existing.updatedAt && v.updatedAt
+          ? new Date(existing.updatedAt).getTime() >= new Date(v.updatedAt).getTime()
+            ? existing.updatedAt
+            : v.updatedAt
+          : v.updatedAt ?? existing.updatedAt;
       map.set(v.cveId, {
         ...existing,
         ...v,
         description: v.description || existing.description,
         descriptionZh: v.descriptionZh || existing.descriptionZh,
         remediation: v.remediation || existing.remediation,
+        updatedAt: mergedUpdated,
         sources: { ...existing.sources, ...v.sources },
         affectedProducts:
           v.affectedProducts.length ? v.affectedProducts : existing.affectedProducts,
@@ -155,9 +174,18 @@ function applyKev(
   kev: import("@/lib/data/cisa").KevEntry | undefined
 ): Vulnerability {
   if (!kev) return vuln;
+  // KEV addition counts as an update event — bump updatedAt so the record
+  // stays within the 7-day window even if publishedDate is older.
+  const kevDate = new Date(kev.dateAdded).toISOString();
+  const currentUpdated = vuln.updatedAt ? new Date(vuln.updatedAt).getTime() : 0;
+  const updatedAt =
+    currentUpdated > 0 && currentUpdated > new Date(kevDate).getTime()
+      ? vuln.updatedAt
+      : kevDate;
   return {
     ...vuln,
     exploited: true,
+    updatedAt,
     ransomwareCampaignUse:
       kev.knownRansomwareCampaignUse === "Known" ? "Known" : "Unknown",
     sources: {
@@ -214,7 +242,9 @@ function computeLandscape(vulns: Vulnerability[], fallback: ThreatLandscape): Th
   const series = Array.from({ length: 7 }).map((_, i) => {
     const offset = 6 - i;
     const date = daysAgoDate(offset);
-    const dayVulns = vulns.filter((v) => v.publishedDate.slice(0, 10) === date);
+    const dayVulns = vulns.filter(
+      (v) => (v.updatedAt ?? v.publishedDate).slice(0, 10) === date
+    );
     return {
       date,
       critical: dayVulns.filter((v) => v.severity === "CRITICAL").length,
@@ -319,16 +349,16 @@ export async function refreshData(): Promise<AggregatedData> {
 
 /**
  * Return a 24-hour digest payload: aggregated data filtered to vulnerabilities
- * and advisories published within the last 24 hours, with stats recomputed.
+ * and advisories updated within the last 24 hours, with stats recomputed.
  * Used by the daily email digest cron (09:00 Beijing time).
  */
 export async function getDigestData24h(): Promise<AggregatedData> {
   const full = await getAggregatedData();
   const vulns24h = full.vulnerabilities.filter((v) =>
-    withinLastHours(v.publishedDate, 24)
+    withinLastHours(v.updatedAt ?? v.publishedDate, 24)
   );
   const advisories24h = full.advisories.filter((a) =>
-    withinLastHours(a.publishedDate, 24)
+    withinLastHours(a.updatedAt ?? a.publishedDate, 24)
   );
   return {
     stats: computeStats(vulns24h),

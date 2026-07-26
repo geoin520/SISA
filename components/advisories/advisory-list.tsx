@@ -35,9 +35,14 @@ export function AdvisoryList({
         <Card key={a.id} className="flex flex-col p-4 transition hover:shadow-md">
           <div className="flex items-center justify-between gap-2">
             <SourceTag source={a.organization} />
-            <span className="text-[11px] text-sisa-muted">
-              {formatDate(a.publishedDate, locale)}
-            </span>
+            <div className="flex flex-col items-end text-[11px] text-sisa-muted">
+              <span>{formatDate(a.publishedDate, locale)}</span>
+              {a.updatedAt && a.updatedAt !== a.publishedDate && (
+                <span className="text-sisa-brand/70">
+                  ⟳ {formatDate(a.updatedAt, locale)}
+                </span>
+              )}
+            </div>
           </div>
           <div className="mt-3 flex items-start gap-2">
             <span className="text-base" aria-hidden>
