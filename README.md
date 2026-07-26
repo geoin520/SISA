@@ -16,7 +16,7 @@
 [![GitHub license](https://img.shields.io/github/license/geoin520/SISA)](https://github.com/geoin520/SISA/blob/main/LICENSE)
 [![Vercel](https://therealsujitk-vercel-badge.vercel.app/?app=sisa-ing)](https://vercel.com/)
 
-[![Next.js](https://img.shields.io/badge/Next.js_15-000000?style=flat&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js_15.5-000000?style=flat&logo=next.js&logoColor=white)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript_5.7-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS_3-06B6D4?style=flat&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![Recharts](https://img.shields.io/badge/Recharts-FF7300?style=flat&logo=react&logoColor=white)](https://recharts.org/)
@@ -48,7 +48,7 @@ SISA.ing is a security intelligence aggregation platform focused on Windows Serv
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
-| Framework | Next.js 15 (App Router) | SSR / ISR, SEO-friendly |
+| Framework | Next.js 15.5 (App Router) | SSR / ISR, SEO-friendly |
 | Language | TypeScript 5.7 | Type safety |
 | Styling | Tailwind CSS 3 | Deep-blue tech theme |
 | Charts | Recharts | Trend & distribution visualization |
