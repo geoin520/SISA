@@ -142,7 +142,7 @@ keywordSearch — 关键词搜索
 text
 GET /cves/2.0?pubStartDate=2026-07-19T00:00:00.000Z&cvssV3Severity=CRITICAL
 3.5 数据聚合策略
-采集频率: 每日定时拉取（建议北京时间 06:00、12:00、18:00）
+采集频率: 每日定时拉取一次（北京时间 08:00 刷新数据，09:00 发送日报）
 
 数据保留策略: 仅保留发布日期在一周内的数据
 
@@ -415,7 +415,7 @@ json
   "crons": [
     {
       "path": "/api/cron/fetch-data",
-      "schedule": "0 6,12,18 * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }

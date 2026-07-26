@@ -92,8 +92,8 @@ SISA/
 │   │   ├── email/preview/     # Email template preview
 │   │   ├── subscribe/         # Email subscription
 │   │   └── cron/
-│   │       ├── fetch-data/    # Data refresh cron (06:00/12:00/18:00 UTC)
-│   │       └── send-digest/   # Daily digest cron (01:00 UTC = 09:00 Beijing)
+│   │       ├── fetch-data/    # Data refresh cron (00:00 UTC = 08:00 Beijing, once daily)
+│   │       └── send-digest/   # Daily digest cron (01:00 UTC = 09:00 Beijing, once daily)
 │   ├── sitemap.ts / robots.ts # SEO
 │   └── layout.tsx             # Root layout
 ├── components/
@@ -127,10 +127,10 @@ SISA/
 
 | Cron | Schedule (UTC) | Endpoint | Purpose |
 |------|----------------|----------|---------|
-| Data refresh | `0 6,12,18 * * *` | `/api/cron/fetch-data` | Refresh the aggregated data cache |
-| Daily digest | `0 1 * * *` | `/api/cron/send-digest` | Send 24-hour security digest to subscribers (09:00 Beijing time) |
+| Data refresh | `0 0 * * *` | `/api/cron/fetch-data` | Refresh the aggregated data cache (08:00 Beijing time, once daily) |
+| Daily digest | `0 1 * * *` | `/api/cron/send-digest` | Send 24-hour security digest to subscribers (09:00 Beijing time, once daily) |
 
-Both endpoints are authenticated via `CRON_SECRET`. The daily digest covers only the past 24 hours — there is **no** real-time push for critical vulnerabilities.
+Both endpoints run **once daily** and are authenticated via `CRON_SECRET`. Data refreshes at 08:00 Beijing time so the 09:00 digest has fresh data. The daily digest covers only the past 24 hours — there is **no** real-time push for critical vulnerabilities.
 
 ### 🔧 Environment Variables
 
@@ -205,10 +205,10 @@ npm run dev
 
 | 定时任务 | UTC 时间 | 接口 | 用途 |
 |----------|----------|------|------|
-| 数据刷新 | `0 6,12,18 * * *` | `/api/cron/fetch-data` | 刷新聚合数据缓存 |
-| 每日日报 | `0 1 * * *` | `/api/cron/send-digest` | 向订阅者发送前 24 小时安全态势汇总（北京时间 09:00） |
+| 数据刷新 | `0 0 * * *` | `/api/cron/fetch-data` | 刷新聚合数据缓存（北京时间 08:00，每天一次） |
+| 每日日报 | `0 1 * * *` | `/api/cron/send-digest` | 向订阅者发送前 24 小时安全态势汇总（北京时间 09:00，每天一次） |
 
-两个接口均通过 `CRON_SECRET` 鉴权。每日日报仅汇总过去 24 小时的数据，**不**进行高危漏洞实时推送。
+两个接口均**每天只执行一次**，通过 `CRON_SECRET` 鉴权。数据在 08:00 刷新，确保 09:00 日报发送时数据为最新。每日日报仅汇总过去 24 小时的数据，**不**进行高危漏洞实时推送。
 
 ### 🔧 环境变量
 

@@ -3,9 +3,9 @@ import { refreshData } from "@/lib/data/aggregator";
 
 /**
  * POST /api/cron/fetch-data
- * Triggered by Vercel Cron (0 6,12,18 * * *). Refreshes the aggregated cache.
- * This is a data-refresh cron only — email digest sending is handled by
- * /api/cron/send-digest (0 1 * * * = 09:00 Beijing time).
+ * Triggered by Vercel Cron (0 0 * * * = 08:00 Beijing time) once daily.
+ * Refreshes the aggregated cache so the 09:00 digest has fresh data.
+ * Email digest sending is handled by /api/cron/send-digest (0 1 * * * = 09:00 Beijing time).
  * Protected by CRON_SECRET via the `authorization` header.
  */
 export async function POST(request: Request) {
