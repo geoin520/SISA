@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sisa: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+}
+
+html,
+body {
+  background-color: #f0f4f9;
+  color: #1e1e1e;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Subtle grid backdrop for the deep-navy header/footer. */
+.bg-tech-grid {
+  background-image:
+    linear-gradient(rgba(0, 163, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 163, 255, 0.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Glow border used by KPI / highlight cards. */
+.glow-border {
+  box-shadow: 0 0 0 1px rgba(0, 163, 255, 0.45), 0 0 22px rgba(0, 163, 255, 0.18);
+}
+
+/* Custom scrollbar for data tables. */
+.scroll-sisa::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.scroll-sisa::-webkit-scrollbar-thumb {
+  background: rgba(10, 30, 60, 0.25);
+  border-radius: 999px;
+}
+.scroll-sisa::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Focus ring tuned to brand color. */
+:where(a, button, input, [tabindex]):focus-visible {
+  outline: 2px solid #0078d4;
+  outline-offset: 2px;
+  border-radius: 4px;
+}

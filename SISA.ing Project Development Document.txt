@@ -1,0 +1,459 @@
+SISA.ing — 项目开发文档
+一、项目概述
+1.1 基本信息
+项目	内容
+域名	SISA.ing
+中文名称	安全洞察 · 态势感知
+英文名称	Security Insights and Situational Awareness
+技术栈	Next.js (App Router) + TypeScript + Tailwind CSS
+部署平台	Vercel（自动部署，连接GitHub仓库）
+数据更新策略	定时任务（ISR / Cron Job）拉取官方数据源
+多语言支持	中英双语，默认中文
+1.2 项目定位
+SISA.ing 是一个一站式Windows Server安全情报聚合平台。它不是信息的简单堆砌，而是像一个信息安全专家一样，从MSRC、CISA、NVD、CNNVD、CNVD等多源权威数据中自动采集、提炼、关联，为用户提供从预警推送、影响评估到修复验证的全链路安全态势感知。
+
+1.3 核心价值
+权威可信：所有数据均来自官方源，提供原始链接
+
+实时聚合：自动采集一周内的最新安全信息
+
+智能提炼：对多源信息进行关联分析和优先级排序
+
+清晰呈现：以安全仪表盘的形态展示态势全貌
+
+二、技术架构
+2.1 技术选型
+层级	技术	说明
+框架	Next.js 15+ (App Router)	支持SSR/ISR，SEO友好
+语言	TypeScript	类型安全
+样式	Tailwind CSS	快速构建，便于维护
+状态管理	React Context / Zustand	轻量级状态管理
+数据获取	Server Components + fetch	服务端渲染，减少客户端负担
+定时任务	Vercel Cron Jobs	定时拉取数据，更新缓存
+数据存储	内存缓存 / Vercel KV	存储聚合后的数据
+邮件模板	React Email	与网站共用组件，风格统一
+2.2 目录结构
+text
+sisa-ing/
+├── app/
+│   ├── [locale]/                 # 国际化路由 (zh / en)
+│   │   ├── layout.tsx
+│   │   ├── page.tsx              # 首页
+│   │   ├── vulnerabilities/      # 漏洞与补丁库
+│   │   ├── advisories/           # 预警与通告中心
+│   │   ├── knowledge/            # 知识库与最佳实践
+│   │   └──态势分析/              # 态势分析 (或 /trends)
+│   ├── api/
+│   │   ├── vulnerabilities/      # 漏洞数据API
+│   │   ├── advisories/           # 通告数据API
+│   │   ├── trends/               # 态势数据API
+│   │   └── cron/                 # 定时任务触发端点
+│   └── layout.tsx
+├── components/
+│   ├── ui/                       # 通用UI组件
+│   ├── dashboard/                # 仪表盘组件
+│   ├── vulnerabilities/          # 漏洞相关组件
+│   ├── advisories/               # 通告相关组件
+│   └── email/                    # 邮件模板组件
+├── lib/
+│   ├── data/                     # 数据获取与聚合逻辑
+│   │   ├── msrc.ts              # MSRC API客户端
+│   │   ├── nvd.ts               # NVD API客户端
+│   │   ├── cisa.ts              # CISA KEV客户端
+│   │   ├── cnvd.ts              # CNVD数据获取
+│   │   └── aggregator.ts        # 数据聚合与关联
+│   ├── i18n/                     # 国际化配置
+│   └── types/                    # TypeScript类型定义
+├── public/
+│   ├── icons/
+│   └── images/
+├── tailwind.config.ts
+├── next.config.ts
+└── package.json
+三、数据源集成方案
+3.1 权威数据源清单
+数据源	类型	地址	数据内容
+MSRC CVRF API	REST API	https://api.msrc.microsoft.com	微软安全更新、CVE详情、受影响产品
+MSRC Security Update Guide	Web / RSS	https://msrc.microsoft.com/update-guide	漏洞详情、KB关联
+CISA KEV Catalog	JSON Feed	https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json	已知被利用漏洞列表
+CISA Advisories	RSS Feed	https://www.cisa.gov/cybersecurity-advisories	CISA安全通告
+NVD CVE API v2.0	REST API	https://services.nvd.nist.gov/rest/json/cves/2.0	CVE详情、CVSS评分、CPE
+CNNVD	Web / RSS	国家信息安全漏洞库	国内漏洞信息
+CNVD	Web / RSS	https://www.cnvd.org.cn	国内漏洞周报
+3.2 MSRC CVRF API 使用说明
+Base URL: https://api.msrc.microsoft.com
+
+关键端点:
+
+text
+GET /updates                    # 获取所有安全更新列表
+GET /updates/{key}              # 按ID/CVE/年份筛选
+GET /cvrf/{id}                  # 获取CVRF详细文档
+OData查询支持:
+
+$filter — 按字段筛选
+
+$orderby — 排序
+
+$top / $skip — 分页
+
+$count — 返回总数
+
+示例: 获取2026年7月后的更新
+
+text
+GET /updates?$filter=currentReleaseDate gt 2026-07-01T00:00:00Z&$orderby=severity desc
+3.3 CISA KEV Catalog 使用说明
+JSON Feed地址: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+
+数据结构:
+
+json
+{
+  "vulnerabilities": [
+    {
+      "cveID": "CVE-2026-xxxx",
+      "vendorProject": "Microsoft",
+      "product": "Windows Server",
+      "vulnerabilityName": "...",
+      "dateAdded": "2026-07-14",
+      "shortDescription": "...",
+      "requiredAction": "...",
+      "dueDate": "...",
+      "knownRansomwareCampaignUse": "Known"
+    }
+  ]
+}
+3.4 NVD CVE API v2.0 使用说明
+Base URL: https://services.nvd.nist.gov/rest/json/cves/2.0
+
+关键参数:
+
+cveId — 单个CVE查询
+
+pubStartDate / pubEndDate — 发布日期范围
+
+cvssV3Severity — 严重级别过滤
+
+keywordSearch — 关键词搜索
+
+示例: 查询一周内的高危漏洞
+
+text
+GET /cves/2.0?pubStartDate=2026-07-19T00:00:00.000Z&cvssV3Severity=CRITICAL
+3.5 数据聚合策略
+采集频率: 每日定时拉取（建议北京时间 06:00、12:00、18:00）
+
+数据保留策略: 仅保留发布日期在一周内的数据
+
+关联逻辑:
+
+从MSRC获取Windows Server相关CVE列表
+
+从NVD补充CVSS评分、CWE分类
+
+从CISA KEV标记是否已被在野利用
+
+从CNVD/CNNVD补充国内漏洞情报
+
+按CVSS评分、利用状态、影响范围进行综合排序
+
+去重与更新:
+
+以CVE编号为唯一键
+
+相同CVE在不同数据源的信息进行合并（优先级：MSRC > NVD > 其他）
+
+数据更新时保留原始发布时间，仅更新内容
+
+四、首页设计规范
+4.1 页面结构
+首页采用 “顶部导航 + 核心KPI仪表盘 + 四大板块” 的布局：
+
+text
+┌─────────────────────────────────────────────────────────┐
+│  🔐 SISA.ing    态势感知仪表盘    [EN | 中文]  🔔订阅  │ ← 顶部导航（深蓝）
+├─────────────────────────────────────────────────────────┤
+│  ┌──────┐  ┌──────┐  ┌──────┐  ┌──────┐              │
+│  │高危   │  │中危   │  │低危   │  │待安装 │              │ ← KPI卡片
+│  │ 12   │  │ 34   │  │ 56   │  │ 89   │              │   (警示高亮)
+│  └──────┘  └──────┘  └──────┘  └──────┘              │
+├─────────────────────────────────────────────────────────┤
+│  📋 漏洞与补丁库  (一周内高危漏洞 TOP 5)              │ ← 板块一
+│  ├─ CVE-2026-xxxx  🔴 CRITICAL  CVSS 9.8  [详情]    │
+│  ├─ CVE-2026-xxxx  🔴 CRITICAL  CVSS 9.1  [详情]    │
+│  └─ ...                                               │
+├─────────────────────────────────────────────────────────┤
+│  🚨 预警与通告中心  (最新3条)                         │ ← 板块二
+│  ├─ MSRC: 七月安全更新发布 (2026-07-14)              │
+│  ├─ CISA: 新增2个KEV漏洞 (2026-07-14)               │
+│  └─ CNVD: 第27期漏洞周报 (2026-07-23)               │
+├─────────────────────────────────────────────────────────┤
+│  📚 知识库与最佳实践  (最新3篇)                       │ ← 板块三
+│  ├─ KB501xxxx: Windows Server 2022 安全更新          │
+│  ├─ 安全基线: Windows Server 2025 加固指南           │
+│  └─ ...                                               │
+├─────────────────────────────────────────────────────────┤
+│  📊 态势分析  (攻击趋势图)                            │ ← 板块四
+│  └─ [趋势图: 本周漏洞数量 / 类型分布 / 厂商分布]     │
+├─────────────────────────────────────────────────────────┤
+│  数据来源: MSRC | NVD | CISA | CNNVD | CNVD          │ ← 页脚
+│  © 2026 SISA.ing                                      │
+└─────────────────────────────────────────────────────────┘
+4.2 视觉规范（深蓝科技风 + 警示高亮）
+角色	色值（Hex）	应用场景
+主基调色	#0A1E3C	顶部导航、页脚、侧边栏
+辅助背景	#F0F4F9	页面主背景
+卡片背景	#1E2F4D	KPI卡片、数据仪表盘卡片
+品牌高亮	#0078D4	按钮、链接、品牌元素
+科技点缀	#00A3FF	数据高亮、发光边框、折线
+高危警示	#D13438	高危CVE标记、紧急通告、KPI
+中危警示	#FFB900	中危漏洞、注意提示
+安全稳妥	#107C10	已修复、已加固状态
+正文主色	#1E1E1E	标题、正文
+正文辅色	#5A5A5A	说明文字、时间戳
+设计原则:
+
+深色区（#0A1E3C）包裹顶部和底部，浅色区（#F0F4F9）承载主要内容
+
+KPI卡片使用深色背景（#1E2F4D）+ 发光蓝边框（#00A3FF），突出数据
+
+高危信息使用红色（#D13438）警示，一目了然
+
+所有文字与背景对比度不低于 WCAG 2.1 AA 标准
+
+4.3 响应式设计
+Desktop (≥1024px)：四栏KPI + 四板块完整展示
+
+Tablet (768-1023px)：两栏KPI + 板块堆叠
+
+Mobile (<768px)：单栏KPI + 简化卡片
+
+五、各板块详细文案
+5.1 板块一：漏洞与补丁库
+板块标题：📋 漏洞与补丁库 · Vulnerability & Patch Database
+
+板块说明：集成微软安全更新指南等权威数据，自动追踪CVE漏洞与月度补丁。以下为近7天内新增的高危漏洞（CVSS评分 ≥ 7.0），按风险优先级排序。
+
+数据展示字段：
+
+字段	说明	数据来源
+CVE编号	如 CVE-2026-xxxx	MSRC / NVD
+漏洞标题	简要描述	MSRC
+CVSS评分	v3.x 评分	NVD
+危险等级	CRITICAL / HIGH / MEDIUM / LOW	NVD
+影响范围	受影响产品（Windows Server版本）	MSRC
+利用状态	已发现在野利用 / 未发现	CISA KEV
+发布日期	年/月/日	MSRC
+修复建议	优先级排序的修复指引	聚合分析
+官方链接	跳转到MSRC/NVD原始页面	—
+示例数据（虚构，实际以API返回为准）：
+
+CVE编号	标题	CVSS	等级	影响范围	利用状态	发布日期
+CVE-2026-56164	Windows Server SharePoint RCE	9.8	CRITICAL	Server 2022, 2025	✅ 已在野利用	2026-07-14
+CVE-2026-56155	Windows Kernel EoP	8.8	HIGH	Server 2019, 2022	✅ 已在野利用	2026-07-14
+CVE-2026-55892	AD DS 权限提升	8.1	HIGH	Server 2025	❌ 未发现	2026-07-16
+空状态文案（一周内无新漏洞时）：
+
+近7天内未检测到影响Windows Server的新增高危漏洞。系统将持续监控，如有新的安全通告将第一时间更新。建议您定期访问本页面或订阅邮件通知。
+
+板块底部：
+
+📎 数据来源：Microsoft Security Response Center · NIST NVD · CISA KEV Catalog · 点击[详情]查看官方原始页面
+
+5.2 板块二：预警与通告中心
+板块标题：🚨 预警与通告中心 · Advisories & Alerts Center
+
+板块说明：聚合来自MSRC、CISA、国内CERT等机构的官方安全预警与通告。以下为近7天内发布的最新通告。
+
+数据展示字段：
+
+字段	说明
+通告标题	简明扼要的通告主题
+发布机构	MSRC / CISA / CNNVD / CNVD
+发布时间	年/月/日
+通告类型	安全更新 / 漏洞预警 / 安全公告
+摘要	通告核心内容（1-2句话）
+官方链接	跳转到原始通告页面
+示例数据（虚构）：
+
+标题	机构	时间	类型
+七月安全更新发布：修复622个漏洞	MSRC	2026-07-14	安全更新
+CISA新增2个Windows Server KEV漏洞	CISA	2026-07-14	漏洞预警
+CNVD 2026年第27期漏洞周报	CNVD	2026-07-23	安全公告
+空状态文案：
+
+近7天内未收到来自官方机构的新安全通告。系统将持续监控各机构发布渠道，如有新的预警信息将第一时间推送。
+
+5.3 板块三：知识库与最佳实践
+板块标题：📚 知识库与最佳实践 · Knowledge Base & Best Practices
+
+板块说明：整理KB文章、安全基线、配置加固指南等实用资源，帮助您构建更安全的Windows Server环境。
+
+数据展示字段：
+
+字段	说明
+标题	知识文档标题
+类型	KB文章 / 安全基线 / 加固指南 / 最佳实践
+更新时间	年/月/日
+摘要	内容简介
+关联产品	适用的Windows Server版本
+官方链接	跳转到微软官方文档
+示例数据（虚构）：
+
+标题	类型	更新时间	关联产品
+KB501xxxx: Windows Server 2022 累积安全更新	KB文章	2026-07-14	Server 2022
+Windows Server 2025 安全基线配置指南	安全基线	2026-07-10	Server 2025
+关闭不必要的端口与服务：Server加固实践	加固指南	2026-07-08	Server 2019+
+空状态文案：
+
+近7天内暂无新的知识库内容更新。建议访问微软官方文档库获取更多Windows Server安全配置指南。
+
+5.4 板块四：态势分析
+板块标题：📊 态势分析 · Threat Landscape
+
+板块说明：整合第三方安全厂商的威胁情报，提供攻击趋势分析，帮助您把握整体安全态势。
+
+展示内容：
+
+本周漏洞趋势图：近7天每日新增漏洞数量折线图
+
+漏洞类型分布：饼图/环形图展示RCE、EoP、DoS等类型占比
+
+厂商分布：受影响产品厂商分布（Microsoft占比）
+
+关键洞察：AI生成的态势总结（1-2句话）
+
+态势总结文案模板：
+
+本周共监测到影响Windows Server的漏洞 XX 个，其中 XX% 为高危漏洞。XX 个漏洞已被CISA标记为在野利用，建议优先修复。受影响产品主要集中在 Windows Server 2022 和 Windows Server 2025。
+
+空状态文案：
+
+本周暂无足够的态势数据进行分析。系统将持续积累数据，随着数据量增加，态势分析将更加全面和准确。
+
+六、中英文文案对照表（关键UI元素）
+中文	English
+安全洞察 · 态势感知	Security Insights & Situational Awareness
+态势感知仪表盘	Security Dashboard
+漏洞与补丁库	Vulnerability & Patch Database
+预警与通告中心	Advisories & Alerts Center
+知识库与最佳实践	Knowledge Base & Best Practices
+态势分析	Threat Landscape
+高危	CRITICAL
+高危（CVSS ≥ 7.0）	High Severity (CVSS ≥ 7.0)
+近7天	Last 7 Days
+查看详情	View Details
+官方来源	Official Source
+发布时间	Published
+影响范围	Affected Products
+修复建议	Remediation Guidance
+已发现在野利用	Actively Exploited in the Wild
+未发现利用	No Known Exploitation
+数据来源	Data Sources
+订阅邮件通知	Subscribe to Email Alerts
+优先级排序	Prioritized by Risk
+七、邮件模板规范
+7.1 设计原则
+与网站保持品牌一致性，但必须适配邮件客户端的兼容性要求：
+
+强制使用纯白底色（#FFFFFF），避免深色背景在邮件客户端中渲染异常
+
+正文使用纯黑（#000000）或深灰（#333333）
+
+品牌色（#0078D4）仅用于顶部Banner和按钮
+
+高危警示红（#D13438）保留用于高危漏洞标记
+
+7.2 邮件模板结构
+text
+┌─────────────────────────────────────────┐
+│  [SISA.ing Banner - #0078D4]           │ ← 品牌横幅
+│  安全洞察 · 态势感知 日报              │
+├─────────────────────────────────────────┤
+│  📊 今日态势概览                       │
+│  ┌──────┐ ┌──────┐ ┌──────┐          │
+│  │高危 12│ │中危 34│ │待安装89│          │ ← 数据卡片（白底+边框）
+│  └──────┘ └──────┘ └──────┘          │
+├─────────────────────────────────────────┤
+│  🔴 需立即关注 (高危漏洞)              │
+│  • CVE-2026-xxxx (CVSS 9.8) [链接]   │
+│  • CVE-2026-xxxx (CVSS 9.1) [链接]   │
+├─────────────────────────────────────────┤
+│  📰 最新通告                          │
+│  • MSRC: 七月安全更新 [链接]          │
+│  • CISA: KEV新增2个 [链接]            │
+├─────────────────────────────────────────┤
+│  📎 查看全部 → sisa.ing              │
+│  此邮件由SISA.ing自动生成             │
+│  数据来源: MSRC | NVD | CISA          │
+└─────────────────────────────────────────┘
+7.3 邮件发送频率
+每日摘要：每日 09:00 发送前24小时汇总
+
+紧急预警：高危漏洞发布时实时推送（可选）
+
+八、部署方案
+8.1 GitHub 仓库结构
+text
+sisa-ing/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml          # Vercel部署（自动）
+├── ...
+└── vercel.json                 # Vercel配置
+8.2 Vercel 部署配置
+vercel.json:
+
+json
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/cron/fetch-data",
+      "schedule": "0 6,12,18 * * *"
+    }
+  ]
+}
+8.3 环境变量
+变量名	说明	示例
+NEXT_PUBLIC_SITE_URL	站点URL	https://sisa.ing
+DATA_CACHE_TTL	数据缓存时间（秒）	3600
+MSRC_API_BASE	MSRC API地址	https://api.msrc.microsoft.com
+EMAIL_FROM	邮件发送地址	alert@sisa.ing
+九、开发优先级建议
+Phase 1 — MVP（最小可行产品）
+□ 项目初始化（Next.js + TypeScript + Tailwind）
+□ 首页四板块布局
+□ MSRC CVRF API 集成 + 数据显示
+□ 深蓝科技风视觉主题
+□ 中英双语切换
+Phase 2 — 数据增强
+□ NVD API 集成（CVSS评分补充）
+□ CISA KEV 集成（利用状态标记）
+□ 数据聚合与关联逻辑
+□ 一周内数据过滤
+Phase 3 — 高级功能
+□ 邮件订阅与自动发送（React Email）
+□ Vercel Cron Jobs 定时数据拉取
+□ 态势分析图表（Recharts / Chart.js）
+□ 全文搜索与筛选
+Phase 4 — 优化与上线
+□ SEO优化（Metadata、sitemap）
+□ 性能优化（ISR、缓存策略）
+□ GitHub Actions + Vercel 自动部署
+□ 域名绑定与SSL
+十、关键注意事项
+数据权威性：所有展示的数据必须提供官方源链接，标注数据来源
+
+时效性：仅展示一周内发布的信息，提供确切发布时间
+
+API限流：NVD API虽无需API Key，但有频率限制，需做好错误处理和重试
+
+邮件兼容性：邮件模板必须使用内联样式，避免依赖外部CSS
+
+安全合规：网站本身需配置HTTPS、CSP等安全头
