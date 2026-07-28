@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { refreshData } from "@/lib/data/aggregator";
 
+export const dynamic = "force-dynamic";
+
 /**
  * POST /api/cron/fetch-data
  * Triggered by Vercel Cron (0 0 * * * = 08:00 Beijing time) once daily.
