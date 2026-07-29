@@ -1,12 +1,12 @@
 /**
  * Shared Upstash Redis client.
  *
- * Upstash Redis is the recommended replacement for the deprecated Vercel KV.
- * It uses HTTP/REST (connectionless), making it ideal for serverless functions.
+ * Uses HTTP/REST (connectionless), ideal for serverless functions.
  *
- * Environment variables (auto-injected when connecting via Vercel Marketplace):
- *   UPSTASH_REDIS_REST_URL
- *   UPSTASH_REDIS_REST_TOKEN
+ * Supports two sets of env vars (both auto-injected by Vercel when you
+ * create an Upstash Redis database via the Vercel Storage Marketplace):
+ *   - KV_REST_API_URL / KV_REST_API_TOKEN        (Vercel KV compatibility)
+ *   - UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN  (Upstash native)
  *
  * @see https://upstash.com/docs/redis/howto/connectwithupstashredis
  */
@@ -17,13 +17,16 @@ let _client: Redis | null = null;
 
 /**
  * Returns a singleton Upstash Redis client.
- * Returns null if env vars are not configured (e.g. local dev without Redis).
+ * Returns null if no env vars are configured (e.g. local dev without Redis).
  */
 export function getRedis(): Redis | null {
   if (_client) return _client;
 
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  // Vercel injects KV_REST_API_* when creating Upstash Redis via Marketplace.
+  // Fall back to UPSTASH_REDIS_REST_* for direct Upstash integrations.
+  const url = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
+  const token =
+    process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
 
   if (!url || !token) {
     return null;
@@ -64,8 +67,8 @@ export async function addSubscriber(email: string): Promise<boolean> {
   const redis = getRedis();
   if (!redis) {
     console.warn(
-      `[redis] Upstash Redis not configured — email "${email}" not persisted. ` +
-        "Set UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN, or use EMAIL_SUBSCRIBERS as fallback."
+      `[redis] Redis not configured — email "${email}" not persisted. ` +
+        "Ensure KV_REST_API_URL / KV_REST_API_TOKEN are set, or use EMAIL_SUBSCRIBERS as fallback."
     );
     return true;
   }
