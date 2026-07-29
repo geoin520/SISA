@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { render } from "@react-email/components";
 import { DailyDigestEmail } from "@/components/email/daily-digest";
 import { getDigestData24h } from "@/lib/data/aggregator";
+import { getSubscribers } from "@/lib/redis";
 
 export const dynamic = "force-dynamic";
 
@@ -65,17 +66,7 @@ export async function POST(request: Request) {
     const date = new Date().toLocaleDateString("zh-CN");
     const subject = `SISA.ing 安全态势日报 · ${date}`;
 
-    // Collect subscribers — prefer Vercel KV, fall back to EMAIL_SUBSCRIBERS env var.
-    let subscribers: string[] = [];
-    try {
-      const { kv } = await import("@vercel/kv");
-      subscribers = await kv.smembers("sisa:subscribers");
-    } catch {
-      subscribers = (process.env.EMAIL_SUBSCRIBERS ?? "")
-        .split(",")
-        .map((e) => e.trim())
-        .filter(Boolean);
-    }
+    const subscribers = await getSubscribers();
 
     if (subscribers.length === 0) {
       console.log("[send-digest] No subscribers configured — email not sent.");
