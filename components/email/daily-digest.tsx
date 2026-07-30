@@ -567,8 +567,8 @@ export function DailyDigestEmail({
           {/* ═════ FOOTER ═════ */}
           <Section style={footerSection}>
             <Section style={{ textAlign: "center" as const, marginBottom: "20px" }}>
-              <Link href={siteUrl} style={ctaButton}>
-                📎 查看全部安全态势 → {siteUrl}
+              <Link href="https://sisa-tech.vercel.app/" style={ctaButton}>
+                📎 查看全部安全态势
               </Link>
             </Section>
 
