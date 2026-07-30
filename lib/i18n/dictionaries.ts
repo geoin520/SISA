@@ -139,7 +139,7 @@ export const dictionaries = {
     home: {
       heroTitle: "Windows Server 安全情报，一站洞察",
       heroSubtitle:
-        "SISA.ing 自动采集 MSRC、CISA、NVD、CNNVD、CNVD 等权威数据，从预警推送、影响评估到修复验证，提供全链路安全态势感知。",
+        "SISA.ing 自动采集 MSRC、CISA、NVD、CNNVD、CNVD 等权威数据，从预警推送、影响评估到修复建议，提供全链路安全态势感知。",
       heroCta: "进入态势感知仪表盘",
       heroSecondary: "了解数据来源",
     },

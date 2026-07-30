@@ -214,7 +214,7 @@ export function DailyDigestEmail({
             </Text>
             <Text style={heroSubtitle}>
               SISA.ing 自动采集 MSRC、CISA、NVD、CNNVD、CNVD 等权威数据，
-              从预警推送、影响评估到修复验证，提供全链路安全态势感知。
+              从预警推送、影响评估到修复建议，提供全链路安全态势感知。
             </Text>
             <Text style={heroDate}>安全态势日报 · {today}</Text>
           </Section>
