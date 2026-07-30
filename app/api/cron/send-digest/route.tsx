@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { render } from "@react-email/components";
 import { DailyDigestEmail } from "@/components/email/daily-digest";
-import { getDigestData24h } from "@/lib/data/aggregator";
+import { getAggregatedData } from "@/lib/data/aggregator";
 import { getSubscribers } from "@/lib/redis";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +9,8 @@ export const dynamic = "force-dynamic";
 /**
  * POST /api/cron/send-digest
  * Triggered by Vercel Cron at 01:00 UTC (= 09:00 Beijing time) daily.
- * Sends a 24-hour security digest to all subscribers via Resend.
+ * Sends a full security posture digest (7-day rolling window) to all
+ * subscribers via Resend. The email mirrors the website dashboard layout.
  *
  * Protected by CRON_SECRET via the `authorization` header.
  */
@@ -20,21 +21,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const data = await getDigestData24h();
+  const data = await getAggregatedData();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sisa.ing";
-
-  // If no vulnerabilities or advisories in the past 24h, skip sending.
-  if (data.vulnerabilities.length === 0 && data.advisories.length === 0) {
-    console.log("[send-digest] No new data in 24h — skipping email.");
-    return NextResponse.json({
-      ok: true,
-      skipped: true,
-      reason: "no_new_data",
-      digestWindow: "24h",
-      generatedAt: data.generatedAt,
-      stats: data.stats,
-    });
-  }
 
   const html = await render(
     <DailyDigestEmail data={data} siteUrl={siteUrl} />
@@ -52,7 +40,7 @@ export async function POST(request: Request) {
       ok: true,
       skipped: true,
       reason: "missing_email_config",
-      digestWindow: "24h",
+      digestWindow: "7d",
       generatedAt: data.generatedAt,
       stats: data.stats,
       htmlLength: html.length,
@@ -74,7 +62,7 @@ export async function POST(request: Request) {
         ok: true,
         skipped: true,
         reason: "no_subscribers",
-        digestWindow: "24h",
+        digestWindow: "7d",
         generatedAt: data.generatedAt,
         stats: data.stats,
       });
@@ -101,7 +89,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       sentTo: subscribers.length,
-      digestWindow: "24h",
+      digestWindow: "7d",
       generatedAt: data.generatedAt,
       stats: data.stats,
       htmlLength: html.length,
