@@ -226,57 +226,73 @@ export function DailyDigestEmail({
               subtitle="7 天滚动窗口安全态势关键指标"
             />
 
-            {/* Primary 4 KPIs */}
-            <Section style={kpiRow}>
-              <KpiCard
-                label="严重"
-                value={data.stats.critical}
-                color={C.critical}
-                bg="#FEE2E2"
-              />
-              <KpiCard
-                label="高危"
-                value={data.stats.high}
-                color={C.high}
-                bg="#FEF3C7"
-              />
-              <KpiCard
-                label="中低危"
-                value={data.stats.medium + data.stats.low}
-                color={C.medium}
-                bg="#DBEAFE"
-              />
-              <KpiCard
-                label="待安装补丁"
-                value={data.stats.pendingPatches}
-                color={C.navy}
-                bg="#E2E8F0"
-              />
-            </Section>
+            {/* Primary 4 KPIs — table layout for email-client compatibility */}
+            <table style={kpiTable} cellPadding={0} cellSpacing={0}>
+              <tbody>
+                <tr>
+                  <td style={kpiTd}>
+                    <div style={{ ...kpiCardBase, backgroundColor: "#FEE2E2" }}>
+                      <Text style={{ ...kpiValue, color: C.critical }}>
+                        {data.stats.critical}
+                      </Text>
+                      <Text style={kpiLabel}>严重</Text>
+                    </div>
+                  </td>
+                  <td style={kpiTd}>
+                    <div style={{ ...kpiCardBase, backgroundColor: "#FEF3C7" }}>
+                      <Text style={{ ...kpiValue, color: C.high }}>
+                        {data.stats.high}
+                      </Text>
+                      <Text style={kpiLabel}>高危</Text>
+                    </div>
+                  </td>
+                  <td style={kpiTd}>
+                    <div style={{ ...kpiCardBase, backgroundColor: "#DBEAFE" }}>
+                      <Text style={{ ...kpiValue, color: C.medium }}>
+                        {data.stats.medium + data.stats.low}
+                      </Text>
+                      <Text style={kpiLabel}>中低危</Text>
+                    </div>
+                  </td>
+                  <td style={kpiTd}>
+                    <div style={{ ...kpiCardBase, backgroundColor: "#E2E8F0" }}>
+                      <Text style={{ ...kpiValue, color: C.navy }}>
+                        {data.stats.pendingPatches}
+                      </Text>
+                      <Text style={kpiLabel}>待安装补丁</Text>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
 
-            {/* Secondary stats bar */}
-            <Section style={statBar}>
-              <Text style={statBarText}>
-                <span style={statBarLabel}>近7天漏洞总数</span>
-                <span style={{ ...statBarValue, color: C.navy }}>
-                  {data.stats.total} 个
-                </span>
-              </Text>
-              <Text style={statBarDivider}>|</Text>
-              <Text style={statBarText}>
-                <span style={statBarLabel}>已发现在野利用</span>
-                <span style={{ ...statBarValue, color: C.critical }}>
-                  {data.stats.exploitedCount} 个
-                </span>
-              </Text>
-              <Text style={statBarDivider}>|</Text>
-              <Text style={statBarText}>
-                <span style={statBarLabel}>最近更新</span>
-                <span style={{ ...statBarValue, color: C.ink, fontWeight: 500 }}>
-                  {fmtDate(data.stats.lastUpdated)}
-                </span>
-              </Text>
-            </Section>
+            {/* Secondary stats bar — table layout */}
+            <table style={statBarTable} cellPadding={0} cellSpacing={0}>
+              <tbody>
+                <tr>
+                  <td style={statBarTd}>
+                    <span style={statBarLabel}>近7天漏洞总数</span>
+                    <span style={{ ...statBarValue, color: C.navy }}>
+                      {data.stats.total} 个
+                    </span>
+                  </td>
+                  <td style={statBarDividerTd}>|</td>
+                  <td style={statBarTd}>
+                    <span style={statBarLabel}>已发现在野利用</span>
+                    <span style={{ ...statBarValue, color: C.critical }}>
+                      {data.stats.exploitedCount} 个
+                    </span>
+                  </td>
+                  <td style={statBarDividerTd}>|</td>
+                  <td style={statBarTd}>
+                    <span style={statBarLabel}>最近更新</span>
+                    <span style={{ ...statBarValue, color: C.ink, fontWeight: 500 }}>
+                      {fmtDate(data.stats.lastUpdated)}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </Section>
 
           <Hr style={hr} />
@@ -498,6 +514,7 @@ export function DailyDigestEmail({
                       const heightPct = Math.round((s.total / maxTotal) * 100);
                       return (
                         <td key={idx} style={chartCell}>
+                          <div style={chartCountLabel}>{s.total}</div>
                           <div style={chartBarWrap}>
                             <div
                               style={{
@@ -674,16 +691,20 @@ const sectionHeaderDesc: React.CSSProperties = {
   lineHeight: 1.6,
 };
 
-const kpiRow: React.CSSProperties = {
-  display: "flex",
-  flexWrap: "wrap" as const,
-  gap: "12px",
+const kpiTable: React.CSSProperties = {
+  width: "100%",
+  borderCollapse: "separate",
+  borderSpacing: "12px 0",
   marginBottom: "16px",
 };
 
+const kpiTd: React.CSSProperties = {
+  width: "25%",
+  padding: "0",
+  verticalAlign: "top" as const,
+};
+
 const kpiCardBase: React.CSSProperties = {
-  flex: "1 1 calc(25% - 12px)",
-  minWidth: "100px",
   borderRadius: "10px",
   padding: "16px 8px",
   textAlign: "center" as const,
@@ -704,39 +725,37 @@ const kpiLabel: React.CSSProperties = {
   fontWeight: 500,
 };
 
-const statBar: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: "12px",
+const statBarTable: React.CSSProperties = {
+  width: "100%",
   backgroundColor: C.subtleBg,
   borderRadius: "8px",
-  padding: "12px 16px",
-  flexWrap: "wrap" as const,
+  borderCollapse: "collapse",
 };
 
-const statBarText: React.CSSProperties = {
-  margin: "0",
+const statBarTd: React.CSSProperties = {
+  padding: "12px 8px",
+  textAlign: "center" as const,
   fontSize: "13px",
-  display: "flex",
-  alignItems: "center",
-  gap: "4px",
+  whiteSpace: "nowrap" as const,
+};
+
+const statBarDividerTd: React.CSSProperties = {
+  padding: "0",
+  textAlign: "center" as const,
+  color: C.border,
+  fontSize: "12px",
+  width: "1%",
 };
 
 const statBarLabel: React.CSSProperties = {
   color: C.muted,
   fontSize: "12px",
+  marginRight: "4px",
 };
 
 const statBarValue: React.CSSProperties = {
   fontWeight: 700,
   fontSize: "14px",
-};
-
-const statBarDivider: React.CSSProperties = {
-  color: C.border,
-  fontSize: "12px",
-  margin: "0",
 };
 
 const hr: React.CSSProperties = {
@@ -966,6 +985,14 @@ const chartBar: React.CSSProperties = {
   backgroundColor: C.brand,
   borderRadius: "4px 4px 0 0",
   minHeight: "4px",
+};
+
+const chartCountLabel: React.CSSProperties = {
+  fontSize: "12px",
+  fontWeight: 700,
+  color: C.navy,
+  marginBottom: "4px",
+  textAlign: "center" as const,
 };
 
 const chartDateLabel: React.CSSProperties = {
