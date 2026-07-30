@@ -30,7 +30,6 @@ export default async function VulnerabilitiesPage({
         <span className="rounded bg-sisa-critical/10 px-2 py-1 font-semibold text-sisa-critical">
           {data.stats.exploitedCount} {dict.kpi.exploited}
         </span>
-        <span>· {dict.common.prioritizedByRisk}</span>
       </div>
       <VulnerabilityTable vulns={data.vulnerabilities} dict={dict} locale={locale} />
       <p className="text-xs text-sisa-muted">📎 {dict.sections.vulnerabilities.source}</p>

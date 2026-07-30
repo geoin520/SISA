@@ -226,11 +226,11 @@ export function DailyDigestEmail({
               subtitle="7 天滚动窗口安全态势关键指标"
             />
 
-            {/* Primary 4 KPIs — table layout for email-client compatibility */}
+            {/* Primary 3 KPIs — table layout for email-client compatibility */}
             <table style={kpiTable} cellPadding={0} cellSpacing={0}>
               <tbody>
                 <tr>
-                  <td style={kpiTd}>
+                  <td style={{ ...kpiTd, width: "33.33%" }}>
                     <div style={{ ...kpiCardBase, backgroundColor: "#FEE2E2" }}>
                       <Text style={{ ...kpiValue, color: C.critical }}>
                         {data.stats.critical}
@@ -238,7 +238,7 @@ export function DailyDigestEmail({
                       <Text style={kpiLabel}>严重</Text>
                     </div>
                   </td>
-                  <td style={kpiTd}>
+                  <td style={{ ...kpiTd, width: "33.33%" }}>
                     <div style={{ ...kpiCardBase, backgroundColor: "#FEF3C7" }}>
                       <Text style={{ ...kpiValue, color: C.high }}>
                         {data.stats.high}
@@ -246,20 +246,12 @@ export function DailyDigestEmail({
                       <Text style={kpiLabel}>高危</Text>
                     </div>
                   </td>
-                  <td style={kpiTd}>
+                  <td style={{ ...kpiTd, width: "33.33%" }}>
                     <div style={{ ...kpiCardBase, backgroundColor: "#DBEAFE" }}>
                       <Text style={{ ...kpiValue, color: C.medium }}>
                         {data.stats.medium + data.stats.low}
                       </Text>
                       <Text style={kpiLabel}>中低危</Text>
-                    </div>
-                  </td>
-                  <td style={kpiTd}>
-                    <div style={{ ...kpiCardBase, backgroundColor: "#E2E8F0" }}>
-                      <Text style={{ ...kpiValue, color: C.navy }}>
-                        {data.stats.pendingPatches}
-                      </Text>
-                      <Text style={kpiLabel}>待安装补丁</Text>
                     </div>
                   </td>
                 </tr>
@@ -365,6 +357,47 @@ export function DailyDigestEmail({
                     <Text style={metaRow}>
                       <span style={metaLabel}>修复建议：</span>
                       <span style={metaValue}>{v.remediation}</span>
+                    </Text>
+                  )}
+
+                  {/* patch info */}
+                  {v.patchId && (
+                    <Text style={metaRow}>
+                      <span style={metaLabel}>补丁编号：</span>
+                      <span style={{ ...metaValue, fontFamily: "monospace" }}>
+                        {v.patchId}
+                      </span>
+                    </Text>
+                  )}
+                  {v.kbArticle && (
+                    <Text style={metaRow}>
+                      <span style={metaLabel}>KB 文章：</span>
+                      <Link href={v.kbArticle} style={kbLink}>
+                        KB 文档 →
+                      </Link>
+                    </Text>
+                  )}
+                  {v.patchStatus && (
+                    <Text style={metaRow}>
+                      <span style={metaLabel}>安装状态：</span>
+                      <span
+                        style={{
+                          ...metaValue,
+                          fontWeight: 600,
+                          color:
+                            v.patchStatus === "installed"
+                              ? C.low
+                              : v.patchStatus === "pending"
+                                ? C.critical
+                                : C.high,
+                        }}
+                      >
+                        {v.patchStatus === "installed"
+                          ? "已安装"
+                          : v.patchStatus === "pending"
+                            ? "待安装"
+                            : "可用"}
+                      </span>
                     </Text>
                   )}
 
@@ -872,6 +905,14 @@ const detailLink: React.CSSProperties = {
   color: C.brand,
   textDecoration: "none",
   marginLeft: "4px",
+};
+
+const kbLink: React.CSSProperties = {
+  fontSize: "13px",
+  fontWeight: 500,
+  color: C.navy,
+  textDecoration: "underline",
+  marginLeft: "2px",
 };
 
 const dataSource: React.CSSProperties = {

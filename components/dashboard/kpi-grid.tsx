@@ -39,11 +39,11 @@ export function KpiGrid({
           hint={dict.common.last7Days}
         />
         <KpiCard
-          label={dict.kpi.pendingPatches}
-          value={stats.pendingPatches}
-          icon="🛠️"
-          tone="pending"
-          hint={dict.common.prioritizedByRisk}
+          label={dict.kpi.total}
+          value={stats.total}
+          icon="📋"
+          tone="glow"
+          hint={dict.common.last7Days}
         />
       </div>
 

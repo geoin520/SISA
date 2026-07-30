@@ -54,6 +54,9 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       cweIds: ["CWE-306"],
       exploited: true,
       ransomwareCampaignUse: "Known",
+      patchId: "KB5082190",
+      kbArticle: "https://support.microsoft.com/help/5082190",
+      patchStatus: "pending",
       remediation:
         "立即安装七月累积安全更新；启用 AMSI 集成并将请求正文扫描模式设为 Full，检测恶意 POST 请求。",
       sources: {
@@ -75,6 +78,9 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       affectedProducts: ["Windows Server 2019", "Windows Server 2022", "Windows Server 2025"],
       cweIds: ["CWE-1220"],
       exploited: true,
+      patchId: "KB5082142",
+      kbArticle: "https://support.microsoft.com/help/5082142",
+      patchStatus: "pending",
       remediation:
         "部署本月安全更新；审计 AD FS 服务器本地管理员组成员，启用最小权限策略与即时访问管理。",
       sources: {
@@ -96,6 +102,9 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       affectedProducts: ["Windows Server 2022", "Windows Server 2025"],
       cweIds: ["CWE-416"],
       exploited: false,
+      patchId: "KB5082142",
+      kbArticle: "https://support.microsoft.com/help/5082142",
+      patchStatus: "available",
       remediation:
         "应用本月 Hyper-V 安全更新；对高负载宿主实施网络隔离与资源配额，限制虚拟机间通信。",
       sources: {
@@ -116,6 +125,9 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       affectedProducts: ["Windows Server 2019", "Windows Server 2022"],
       cweIds: ["CWE-908"],
       exploited: false,
+      patchId: "KB5082142",
+      kbArticle: "https://support.microsoft.com/help/5082142",
+      patchStatus: "available",
       remediation:
         "立即安装 RDP 安全更新；启用 NLA 网络级身份验证，关闭不必要的 3389 端口公网暴露。",
       sources: {
@@ -136,6 +148,9 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       affectedProducts: ["Windows Server 2019", "Windows Server 2022", "Windows Server 2025"],
       cweIds: ["CWE-122"],
       exploited: false,
+      patchId: "KB5082142",
+      kbArticle: "https://support.microsoft.com/help/5082142",
+      patchStatus: "available",
       remediation:
         "应用 DHCP 服务器累积更新；确保 DHCP 服务器不暴露于互联网，实施网络分段隔离。",
       sources: {
@@ -156,6 +171,9 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       affectedProducts: ["Windows Server 2022", "Windows Server 2025"],
       cweIds: ["CWE-362"],
       exploited: false,
+      patchId: "KB5082142",
+      kbArticle: "https://support.microsoft.com/help/5082142",
+      patchStatus: "installed",
       remediation:
         "安装网络驱动安全更新；监控异常网络流量，评估是否可临时启用流量过滤规则。",
       sources: {
@@ -176,6 +194,9 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       affectedProducts: ["SharePoint Server 2019", "SharePoint Server Subscription Edition"],
       cweIds: ["CWE-502"],
       exploited: false,
+      patchId: "KB5082190",
+      kbArticle: "https://support.microsoft.com/help/5082190",
+      patchStatus: "available",
       remediation:
         "立即安装 SharePoint 累积安全更新；限制管理中心远程访问，启用请求过滤与身份验证。",
       sources: {
@@ -196,6 +217,9 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       affectedProducts: ["Windows Server 2022", "Windows Server 2025"],
       cweIds: ["CWE-693"],
       exploited: false,
+      patchId: "KB5082142",
+      kbArticle: "https://support.microsoft.com/help/5082142",
+      patchStatus: "available",
       remediation:
         "部署本月安全更新；对移动设备与高敏感服务器启用 TPM + PIN 启动保护，减少物理攻击面。",
       sources: {
@@ -216,6 +240,9 @@ function buildSampleVulnerabilities(): Vulnerability[] {
     cweIds: v.cweIds,
     exploited: v.exploited,
     ransomwareCampaignUse: v.ransomwareCampaignUse,
+    patchId: v.patchId,
+    kbArticle: v.kbArticle,
+    patchStatus: v.patchStatus,
     publishedDate: daysAgoIso(v.publishedOffset),
     updatedAt: daysAgoIso(v.updatedOffset),
     remediation: v.remediation,
@@ -366,7 +393,6 @@ export function buildSampleData(): AggregatedData {
       high,
       medium,
       low,
-      pendingPatches: 12 + high,
       total: vulns.length,
       exploitedCount: vulns.filter((v) => v.exploited).length,
       lastUpdated: new Date().toISOString(),

@@ -35,6 +35,12 @@ export interface Vulnerability {
   remediation: string;
   /** Original official links keyed by source. */
   sources: Partial<Record<DataSource, string>>;
+  /** Patch ID, e.g. "KB5082142", associated with the fix for this vulnerability. */
+  patchId?: string;
+  /** Link to the KB article on Microsoft Support. */
+  kbArticle?: string;
+  /** Installation status of the patch. */
+  patchStatus?: "available" | "installed" | "pending";
 }
 
 export type AdvisoryType = "security_update" | "vuln_alert" | "security_bulletin";
@@ -77,7 +83,6 @@ export interface DashboardStats {
   high: number;
   medium: number;
   low: number;
-  pendingPatches: number;
   /** Within the rolling 7-day window. */
   total: number;
   exploitedCount: number;

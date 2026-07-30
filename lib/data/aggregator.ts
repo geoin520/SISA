@@ -229,7 +229,6 @@ function computeStats(vulns: Vulnerability[]): DashboardStats {
     high: count("HIGH"),
     medium: count("MEDIUM"),
     low: count("LOW"),
-    pendingPatches: 12 + count("HIGH") + count("CRITICAL"),
     total: vulns.length,
     exploitedCount: vulns.filter((v) => v.exploited).length,
     lastUpdated: new Date().toISOString(),
