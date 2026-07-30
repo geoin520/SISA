@@ -342,6 +342,15 @@ export function DailyDigestEmail({
                   <Text style={metaRow}>
                     <span style={metaLabel}>发布日期：</span>
                     <span style={metaValue}>{fmtDate(v.publishedDate)}</span>
+                    {v.updatedAt && (
+                      <>
+                        <span style={{ color: C.border, margin: "0 6px" }}>
+                          ·
+                        </span>
+                        <span style={metaLabel}>更新日期：</span>
+                        <span style={metaValue}>{fmtDate(v.updatedAt)}</span>
+                      </>
+                    )}
                   </Text>
 
                   {/* remediation */}

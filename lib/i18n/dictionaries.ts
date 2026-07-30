@@ -85,7 +85,7 @@ export const dictionaries = {
       affectedProducts: "影响范围",
       exploited: "利用状态",
       publishedDate: "发布日期",
-      updatedDate: "最后更新日期",
+      updatedDate: "更新日期",
       remediation: "修复建议",
       actions: "操作",
       viewDetails: "查看详情",
