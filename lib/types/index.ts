@@ -35,12 +35,6 @@ export interface Vulnerability {
   remediation: string;
   /** Original official links keyed by source. */
   sources: Partial<Record<DataSource, string>>;
-  /** Patch ID, e.g. "KB5082142", associated with the fix for this vulnerability. */
-  patchId?: string;
-  /** Link to the KB article on Microsoft Support. */
-  kbArticle?: string;
-  /** Installation status of the patch. */
-  patchStatus?: "available" | "installed" | "pending";
 }
 
 export type AdvisoryType = "security_update" | "vuln_alert" | "security_bulletin";

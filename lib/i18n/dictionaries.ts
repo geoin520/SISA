@@ -87,9 +87,6 @@ export const dictionaries = {
       publishedDate: "发布日期",
       updatedDate: "更新日期",
       remediation: "修复建议",
-      patchId: "补丁编号",
-      kbArticle: "KB 文章",
-      patchStatus: "安装状态",
       actions: "操作",
       viewDetails: "查看详情",
       officialSource: "官方来源",
@@ -123,11 +120,6 @@ export const dictionaries = {
     exploited: {
       true: "已发现在野利用",
       false: "未发现利用",
-    },
-    patchStatus: {
-      available: "可用",
-      installed: "已安装",
-      pending: "待安装",
     },
     common: {
       last7Days: "近 7 天",
@@ -236,9 +228,6 @@ export const dictionaries = {
       publishedDate: "Published",
       updatedDate: "Updated",
       remediation: "Remediation Guidance",
-      patchId: "Patch ID",
-      kbArticle: "KB Article",
-      patchStatus: "Install Status",
       actions: "Actions",
       viewDetails: "View Details",
       officialSource: "Official Source",
@@ -272,11 +261,6 @@ export const dictionaries = {
     exploited: {
       true: "Actively Exploited in the Wild",
       false: "No Known Exploitation",
-    },
-    patchStatus: {
-      available: "Available",
-      installed: "Installed",
-      pending: "Pending",
     },
     common: {
       last7Days: "Last 7 Days",

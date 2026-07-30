@@ -360,47 +360,6 @@ export function DailyDigestEmail({
                     </Text>
                   )}
 
-                  {/* patch info */}
-                  {v.patchId && (
-                    <Text style={metaRow}>
-                      <span style={metaLabel}>补丁编号：</span>
-                      <span style={{ ...metaValue, fontFamily: "monospace" }}>
-                        {v.patchId}
-                      </span>
-                    </Text>
-                  )}
-                  {v.kbArticle && (
-                    <Text style={metaRow}>
-                      <span style={metaLabel}>KB 文章：</span>
-                      <Link href={v.kbArticle} style={kbLink}>
-                        KB 文档 →
-                      </Link>
-                    </Text>
-                  )}
-                  {v.patchStatus && (
-                    <Text style={metaRow}>
-                      <span style={metaLabel}>安装状态：</span>
-                      <span
-                        style={{
-                          ...metaValue,
-                          fontWeight: 600,
-                          color:
-                            v.patchStatus === "installed"
-                              ? C.low
-                              : v.patchStatus === "pending"
-                                ? C.critical
-                                : C.high,
-                        }}
-                      >
-                        {v.patchStatus === "installed"
-                          ? "已安装"
-                          : v.patchStatus === "pending"
-                            ? "待安装"
-                            : "可用"}
-                      </span>
-                    </Text>
-                  )}
-
                   {/* source tags + link */}
                   <Text style={{ margin: "10px 0 0" }}>
                     {Object.entries(v.sources)
@@ -905,14 +864,6 @@ const detailLink: React.CSSProperties = {
   color: C.brand,
   textDecoration: "none",
   marginLeft: "4px",
-};
-
-const kbLink: React.CSSProperties = {
-  fontSize: "13px",
-  fontWeight: 500,
-  color: C.navy,
-  textDecoration: "underline",
-  marginLeft: "2px",
 };
 
 const dataSource: React.CSSProperties = {

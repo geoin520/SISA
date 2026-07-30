@@ -8,11 +8,13 @@
  * any sample CVE that also appears in CISA KEV is automatically flagged.
  *
  * IMPORTANT: `publishedDate` is the original MSRC/NVD publication date
- * (e.g. Patch Tuesday 2026-07-14). `updatedAt` is the last time the record
- * was enriched or modified by any source (NVD score update, CISA KEV add,
- * etc.). The dashboard's 7-day window filters on `updatedAt`, not
- * `publishedDate`, because a CVE published 12 days ago may still be
- * "active" this week due to KEV additions or CVSS re-scoring.
+ * (e.g. Patch Tuesday 2026-07-14) and is a FIXED absolute date — it does not
+ * shift with "today". `updatedAt` is the last time the record was enriched or
+ * modified by any source (NVD score update, CISA KEV add, etc.) and is
+ * computed as a relative offset from today so the 7-day window stays populated.
+ * The dashboard's 7-day window filters on `updatedAt`, not `publishedDate`,
+ * because a CVE published weeks ago may still be "active" this week due to
+ * KEV additions or CVSS re-scoring.
  */
 
 import type {
@@ -24,19 +26,21 @@ import type {
 } from "@/lib/types";
 import { daysAgoDate, daysAgoIso, severityFromScore } from "@/lib/utils";
 
+/** Fixed publication date for July 2026 Patch Tuesday. */
+const PATCH_TUESDAY = "2026-07-14T00:00:00.000Z";
+
 /** Deterministic sample CVEs anchored to "today" so the 7-day window is always populated.
  *
  * All CVE IDs below are REAL vulnerabilities from Microsoft's July 2026 Patch Tuesday
  * (released 2026-07-14). MSRC and NVD links have been verified as valid.
  *
- * `publishedOffset` = days since Patch Tuesday publication (12 → 2026-07-14).
- * `updatedOffset`   = days since last source update (within 7 days of "today").
+ * `publishedDate` = fixed absolute ISO date (Patch Tuesday 2026-07-14).
+ * `updatedOffset`  = days since last source update (within 7 days of "today").
  */
 function buildSampleVulnerabilities(): Vulnerability[] {
   const base: Array<
     Omit<Vulnerability, "cvssScore" | "severity" | "publishedDate" | "updatedAt"> & {
       cvssScore: number;
-      publishedOffset: number;
       updatedOffset: number;
     }
   > = [
@@ -48,15 +52,11 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "Microsoft Office SharePoint 关键功能缺少身份验证，未经身份验证的攻击者可通过网络提升权限。补丁发布前已被在野利用。",
       cvssScore: 9.8,
-      publishedOffset: 12,
       updatedOffset: 2,
       affectedProducts: ["SharePoint Server 2019", "SharePoint Server Subscription Edition"],
       cweIds: ["CWE-306"],
       exploited: true,
       ransomwareCampaignUse: "Known",
-      patchId: "KB5082190",
-      kbArticle: "https://support.microsoft.com/help/5082190",
-      patchStatus: "pending",
       remediation:
         "立即安装七月累积安全更新；启用 AMSI 集成并将请求正文扫描模式设为 Full，检测恶意 POST 请求。",
       sources: {
@@ -73,14 +73,10 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "AD FS 访问控制粒度不足，低权限已认证攻击者可在本地提升至管理员权限。已被在野利用，由微软 DART 事件响应团队发现。",
       cvssScore: 7.8,
-      publishedOffset: 12,
       updatedOffset: 3,
       affectedProducts: ["Windows Server 2019", "Windows Server 2022", "Windows Server 2025"],
       cweIds: ["CWE-1220"],
       exploited: true,
-      patchId: "KB5082142",
-      kbArticle: "https://support.microsoft.com/help/5082142",
-      patchStatus: "pending",
       remediation:
         "部署本月安全更新；审计 AD FS 服务器本地管理员组成员，启用最小权限策略与即时访问管理。",
       sources: {
@@ -97,14 +93,10 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "Windows VMSwitch 中存在释放后重用漏洞，已认证攻击者可通过网络提升权限。攻击者可在来宾虚拟机内运行代码，向 Hyper-V 虚拟交换机发送特制网络请求以逃逸虚拟机边界。",
       cvssScore: 9.9,
-      publishedOffset: 12,
       updatedOffset: 4,
       affectedProducts: ["Windows Server 2022", "Windows Server 2025"],
       cweIds: ["CWE-416"],
       exploited: false,
-      patchId: "KB5082142",
-      kbArticle: "https://support.microsoft.com/help/5082142",
-      patchStatus: "available",
       remediation:
         "应用本月 Hyper-V 安全更新；对高负载宿主实施网络隔离与资源配额，限制虚拟机间通信。",
       sources: {
@@ -120,14 +112,10 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "Windows RDP 中存在使用未初始化资源漏洞，未经身份验证的攻击者可通过网络执行代码。可利用于禁用网络级身份验证 (NLA) 的系统。",
       cvssScore: 9.8,
-      publishedOffset: 12,
       updatedOffset: 5,
       affectedProducts: ["Windows Server 2019", "Windows Server 2022"],
       cweIds: ["CWE-908"],
       exploited: false,
-      patchId: "KB5082142",
-      kbArticle: "https://support.microsoft.com/help/5082142",
-      patchStatus: "available",
       remediation:
         "立即安装 RDP 安全更新；启用 NLA 网络级身份验证，关闭不必要的 3389 端口公网暴露。",
       sources: {
@@ -143,14 +131,10 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "Windows DHCP 服务器中存在基于堆的缓冲区溢出漏洞，未经身份验证的攻击者可通过发送特制 DHCP 数据包在网络中执行代码。",
       cvssScore: 9.8,
-      publishedOffset: 12,
       updatedOffset: 6,
       affectedProducts: ["Windows Server 2019", "Windows Server 2022", "Windows Server 2025"],
       cweIds: ["CWE-122"],
       exploited: false,
-      patchId: "KB5082142",
-      kbArticle: "https://support.microsoft.com/help/5082142",
-      patchStatus: "available",
       remediation:
         "应用 DHCP 服务器累积更新；确保 DHCP 服务器不暴露于互联网，实施网络分段隔离。",
       sources: {
@@ -166,14 +150,10 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "Windows Server 网络驱动中存在竞态条件漏洞，未经身份验证的攻击者可通过发送特制网络数据包在网络中执行代码。",
       cvssScore: 9.8,
-      publishedOffset: 12,
       updatedOffset: 2,
       affectedProducts: ["Windows Server 2022", "Windows Server 2025"],
       cweIds: ["CWE-362"],
       exploited: false,
-      patchId: "KB5082142",
-      kbArticle: "https://support.microsoft.com/help/5082142",
-      patchStatus: "installed",
       remediation:
         "安装网络驱动安全更新；监控异常网络流量，评估是否可临时启用流量过滤规则。",
       sources: {
@@ -189,14 +169,10 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "Microsoft Office SharePoint 中存在不可信数据反序列化漏洞，未经身份验证的攻击者可通过发送特制 XML 请求在网络中执行代码。曾在 Pwn2Own 柏林大赛上演示。",
       cvssScore: 9.8,
-      publishedOffset: 12,
       updatedOffset: 3,
       affectedProducts: ["SharePoint Server 2019", "SharePoint Server Subscription Edition"],
       cweIds: ["CWE-502"],
       exploited: false,
-      patchId: "KB5082190",
-      kbArticle: "https://support.microsoft.com/help/5082190",
-      patchStatus: "available",
       remediation:
         "立即安装 SharePoint 累积安全更新；限制管理中心远程访问，启用请求过滤与身份验证。",
       sources: {
@@ -212,14 +188,10 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "Windows BitLocker 防护机制失效，拥有物理访问权限的未经身份验证攻击者可绕过 BitLocker 设备加密并访问加密数据。补丁发布前已被公开披露。",
       cvssScore: 6.1,
-      publishedOffset: 12,
       updatedOffset: 4,
       affectedProducts: ["Windows Server 2022", "Windows Server 2025"],
       cweIds: ["CWE-693"],
       exploited: false,
-      patchId: "KB5082142",
-      kbArticle: "https://support.microsoft.com/help/5082142",
-      patchStatus: "available",
       remediation:
         "部署本月安全更新；对移动设备与高敏感服务器启用 TPM + PIN 启动保护，减少物理攻击面。",
       sources: {
@@ -240,10 +212,7 @@ function buildSampleVulnerabilities(): Vulnerability[] {
     cweIds: v.cweIds,
     exploited: v.exploited,
     ransomwareCampaignUse: v.ransomwareCampaignUse,
-    patchId: v.patchId,
-    kbArticle: v.kbArticle,
-    patchStatus: v.patchStatus,
-    publishedDate: daysAgoIso(v.publishedOffset),
+    publishedDate: PATCH_TUESDAY,
     updatedAt: daysAgoIso(v.updatedOffset),
     remediation: v.remediation,
     sources: v.sources,
@@ -257,7 +226,7 @@ function buildSampleAdvisories(): Advisory[] {
       title: "七月安全更新发布：修复 622 个漏洞",
       titleEn: "July Security Update Release: 622 Vulnerabilities Patched",
       organization: "MSRC",
-      publishedDate: daysAgoIso(12),
+      publishedDate: PATCH_TUESDAY,
       updatedAt: daysAgoIso(2),
       type: "security_update",
       summary:
@@ -271,7 +240,7 @@ function buildSampleAdvisories(): Advisory[] {
       title: "CISA 新增 2 个 Windows Server KEV 漏洞",
       titleEn: "CISA Adds 2 Windows Server KEV Vulnerabilities",
       organization: "CISA",
-      publishedDate: daysAgoIso(12),
+      publishedDate: PATCH_TUESDAY,
       updatedAt: daysAgoIso(3),
       type: "vuln_alert",
       summary:
