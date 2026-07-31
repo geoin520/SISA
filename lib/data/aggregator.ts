@@ -20,20 +20,22 @@ import { enrichFromNvd, applyNvdEnrichment, fetchRecentNvdCves } from "@/lib/dat
 import { fetchKevMap, fetchCisaKevAdvisories } from "@/lib/data/cisa";
 import { fetchCnvdAdvisories } from "@/lib/data/cnvd";
 import { buildSampleData } from "@/lib/data/mock";
-
-const TTL_MS = Number(process.env.DATA_CACHE_TTL ?? 3600) * 1000;
-let cache: { fetchedAt: number; data: AggregatedData } | null = null;
+import { getCachedAggregatedData, setAggregatedData } from "@/lib/redis";
 
 /**
  * Fetch and merge all sources into a single aggregated payload.
- * Result is cached for DATA_CACHE_TTL seconds.
+ * Result is cached in Redis for DATA_CACHE_TTL seconds (default 1 hour).
+ * In Vercel serverless, Redis is the only cross-request persistent cache.
  */
 export async function getAggregatedData(force = false): Promise<AggregatedData> {
-  if (!force && cache && Date.now() - cache.fetchedAt < TTL_MS) {
-    return cache.data;
+  if (!force) {
+    const cached = await getCachedAggregatedData();
+    if (cached) {
+      return cached as AggregatedData;
+    }
   }
   const data = await aggregateData();
-  cache = { fetchedAt: Date.now(), data };
+  await setAggregatedData(data);
   return data;
 }
 

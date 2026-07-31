@@ -39,6 +39,41 @@ export function getRedis(): Redis | null {
 /** Redis key for the subscriber email set. */
 export const SUBSCRIBERS_KEY = "sisa:subscribers";
 
+/** Redis key for the cached aggregated data payload. */
+export const AGGREGATED_DATA_KEY = "sisa:aggregated-data";
+
+/** TTL for the aggregated data cache in seconds (default 1 hour). */
+const AGGREGATED_DATA_TTL = Number(process.env.DATA_CACHE_TTL ?? 3600);
+
+/** Write aggregated data to Redis with TTL. */
+export async function setAggregatedData(data: unknown): Promise<void> {
+  const redis = getRedis();
+  if (!redis) {
+    console.warn("[redis] Redis not configured — aggregated data not cached.");
+    return;
+  }
+  try {
+    await redis.set(AGGREGATED_DATA_KEY, JSON.stringify(data), { ex: AGGREGATED_DATA_TTL });
+    console.log("[redis] Aggregated data cached successfully.");
+  } catch (err) {
+    console.error("[redis] set aggregated-data failed:", err);
+  }
+}
+
+/** Read aggregated data from Redis. Returns null if missing or on error. */
+export async function getCachedAggregatedData(): Promise<unknown | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  try {
+    const raw = await redis.get<string>(AGGREGATED_DATA_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (err) {
+    console.error("[redis] get aggregated-data failed:", err);
+    return null;
+  }
+}
+
 /**
  * Get all subscriber emails.
  * Prefers Upstash Redis; falls back to EMAIL_SUBSCRIBERS env var.
