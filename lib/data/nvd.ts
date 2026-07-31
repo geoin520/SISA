@@ -53,6 +53,7 @@ export async function enrichFromNvd(cveId: string): Promise<NvdEnrichment | null
     const res = await fetch(url, {
       headers,
       next: { revalidate: Number(process.env.DATA_CACHE_TTL ?? 3600) },
+      signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return null;
     const json = (await res.json()) as NvdResponse;
@@ -81,6 +82,7 @@ export async function fetchRecentNvdCves(
     const res = await fetch(`${NVD_API_BASE}?${params.toString()}`, {
       headers,
       next: { revalidate: Number(process.env.DATA_CACHE_TTL ?? 3600) },
+      signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return [];
     const json = (await res.json()) as NvdResponse;

@@ -91,19 +91,26 @@ async function collectLiveVulnerabilities(): Promise<Vulnerability[]> {
   const out: Vulnerability[] = [];
   const seen = new Set<string>();
 
-  // 1) MSRC list -> enrich each with NVD CVSS/CWE.
+  // 1) MSRC list -> enrich each with NVD CVSS/CWE (concurrent, limited to 3).
   try {
     const msrcRecords = await fetchMsrcUpdates();
     const kevMap = await fetchKevMap();
-    // Limit enrichment to avoid NVD rate limits; sample data fills the rest.
-    for (const rec of msrcRecords.slice(0, 8)) {
-      if (seen.has(rec.cveId)) continue;
-      seen.add(rec.cveId);
-      let vuln = msrcToVulnerabilities([rec])[0];
-      const enrich = await enrichFromNvd(rec.cveId);
-      vuln = applyNvdEnrichment(vuln, enrich);
-      vuln = applyKev(vuln, kevMap.get(rec.cveId));
-      if (vuln.cvssScore) out.push(vuln);
+    // Limit to 3 and enrich concurrently to stay within Vercel's 10s timeout.
+    const top3 = msrcRecords.slice(0, 3);
+    const enriched = await Promise.allSettled(
+      top3.map(async (rec) => {
+        const vuln = msrcToVulnerabilities([rec])[0];
+        const enrich = await enrichFromNvd(rec.cveId);
+        return applyKev(applyNvdEnrichment(vuln, enrich), kevMap.get(rec.cveId));
+      })
+    );
+    for (const r of enriched) {
+      if (r.status === "fulfilled" && r.value.cvssScore) {
+        if (!seen.has(r.value.cveId)) {
+          seen.add(r.value.cveId);
+          out.push(r.value);
+        }
+      }
     }
   } catch {
     /* swallow — sample data covers us */

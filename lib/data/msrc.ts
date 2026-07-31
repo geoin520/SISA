@@ -45,6 +45,7 @@ export async function fetchMsrcUpdates(): Promise<MsrcCveRecord[]> {
     const res = await fetch(url, {
       headers: { Accept: "application/json" },
       next: { revalidate: Number(process.env.DATA_CACHE_TTL ?? 3600) },
+      signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return [];
     const json = await res.json();

@@ -5,6 +5,7 @@ import { getAggregatedData } from "@/lib/data/aggregator";
 import { getSubscribers } from "@/lib/redis";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 10;
 
 /**
  * POST /api/cron/send-digest

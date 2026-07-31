@@ -40,6 +40,7 @@ export async function fetchKevCatalog(): Promise<KevEntry[]> {
   try {
     const res = await fetch(CISA_KEV_URL, {
       next: { revalidate: Number(process.env.DATA_CACHE_TTL ?? 3600) },
+      signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return cache?.data ?? [];
     const json = (await res.json()) as KevCatalog;

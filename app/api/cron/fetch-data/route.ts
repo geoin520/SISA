@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { refreshData } from "@/lib/data/aggregator";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 10;
 
 /**
  * POST /api/cron/fetch-data

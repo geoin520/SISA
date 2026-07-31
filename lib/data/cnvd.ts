@@ -25,6 +25,7 @@ export async function fetchCnvdAdvisories(): Promise<Advisory[]> {
   try {
     const res = await fetch(CNVD_RSS, {
       next: { revalidate: Number(process.env.DATA_CACHE_TTL ?? 3600) },
+      signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return [];
     // RSS parsing is intentionally minimal; on any structural surprise we bail.
