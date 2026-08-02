@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { addSubscriber } from "@/lib/redis";
+import { addSubscriber, removeSubscriber } from "@/lib/redis";
 
 /**
  * POST /api/subscribe
@@ -34,4 +34,28 @@ export async function GET() {
   const { getSubscribers } = await import("@/lib/redis");
   const subscribers = await getSubscribers();
   return NextResponse.json({ ok: true, subscribers });
+}
+
+/** DELETE /api/subscribe — remove a subscriber email.
+ * Body: { "email": "user@example.com" }
+ */
+export async function DELETE(request: Request) {
+  let email: string;
+  try {
+    const body = await request.json();
+    email = String(body?.email ?? "").trim().toLowerCase();
+  } catch {
+    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return NextResponse.json({ error: "Invalid email" }, { status: 400 });
+  }
+
+  const removed = await removeSubscriber(email);
+  if (!removed) {
+    return NextResponse.json({ ok: true, notFound: true, email });
+  }
+  console.log(`[subscribe] Removed subscriber: ${email}`);
+  return NextResponse.json({ ok: true, removed: true, email });
 }

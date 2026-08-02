@@ -69,27 +69,46 @@ export async function POST(request: Request) {
       });
     }
 
-    const { error } = await resend.emails.send({
-      from: emailFrom,
-      to: subscribers,
-      subject,
-      html,
-    });
+    // Send to each subscriber individually to isolate per-recipient failures
+    // (e.g. Resend test-domain restriction on non-verified recipients).
+    const results = await Promise.allSettled(
+      subscribers.map((email) =>
+        resend.emails.send({ from: emailFrom, to: email, subject, html })
+      )
+    );
 
-    if (error) {
-      console.error("[send-digest] Resend error:", error);
+    const succeeded = results.filter((r) => r.status === "fulfilled" && !r.value.error);
+    const failed = results
+      .map((r, i) =>
+        r.status === "rejected"
+          ? { email: subscribers[i], error: String(r.reason) }
+          : r.value.error
+            ? { email: subscribers[i], error: r.value.error.message }
+            : null
+      )
+      .filter(Boolean);
+
+    if (succeeded.length === 0) {
+      console.error("[send-digest] All sends failed:", failed);
       return NextResponse.json(
-        { ok: false, error: error.message },
+        {
+          ok: false,
+          error: "All email sends failed",
+          details: failed,
+        },
         { status: 500 }
       );
     }
 
     console.log(
-      `[send-digest] Email sent to ${subscribers.length} subscriber(s).`
+      `[send-digest] Email sent to ${succeeded.length}/${subscribers.length} subscriber(s).` +
+        (failed.length ? ` Failed: ${JSON.stringify(failed)}` : "")
     );
     return NextResponse.json({
       ok: true,
-      sentTo: subscribers.length,
+      sentTo: succeeded.length,
+      failed: failed.length,
+      failedDetails: failed,
       digestWindow: "7d",
       generatedAt: data.generatedAt,
       stats: data.stats,

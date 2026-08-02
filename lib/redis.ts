@@ -115,3 +115,23 @@ export async function addSubscriber(email: string): Promise<boolean> {
     return true;
   }
 }
+
+/**
+ * Remove a subscriber email. Returns true if removed, false if not found.
+ */
+export async function removeSubscriber(email: string): Promise<boolean> {
+  const redis = getRedis();
+  if (!redis) {
+    console.warn(
+      `[redis] Redis not configured — cannot remove "${email}".`
+    );
+    return false;
+  }
+  try {
+    const removed = await redis.srem(SUBSCRIBERS_KEY, email);
+    return removed === 1;
+  } catch (err) {
+    console.error("[redis] srem failed:", err);
+    return false;
+  }
+}
