@@ -42,6 +42,7 @@ export interface NvdEnrichment {
   description: string;
   affectedProducts: string[];
   sourceUrl: string;
+  published?: string;
 }
 
 /** Query NVD for a single CVE and return enrichment data. */
@@ -118,6 +119,7 @@ function parseNvdCve(cve: NvdCve): NvdEnrichment {
     description,
     affectedProducts,
     sourceUrl: `https://nvd.nist.gov/vuln/detail/${cve.id}`,
+    published: cve.published,
   };
 }
 

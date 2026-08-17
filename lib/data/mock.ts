@@ -7,14 +7,13 @@
  * underneath live data — live records replace sample records by CVE id, and
  * any sample CVE that also appears in CISA KEV is automatically flagged.
  *
- * IMPORTANT: `publishedDate` is the original MSRC/NVD publication date
- * (e.g. Patch Tuesday 2026-07-14) and is a FIXED absolute date — it does not
- * shift with "today". `updatedAt` is the last time the record was enriched or
- * modified by any source (NVD score update, CISA KEV add, etc.) and is
- * computed as a relative offset from today so the 7-day window stays populated.
- * The dashboard's 7-day window filters on `updatedAt`, not `publishedDate`,
- * because a CVE published weeks ago may still be "active" this week due to
- * KEV additions or CVSS re-scoring.
+ * `publishedDate` = fixed absolute ISO date (Patch Tuesday 2026-07-14).
+ * `updatedAt`     = relative offset from today via `daysAgoIso(N)` so the
+ *                   7-day window always stays populated. This represents the
+ *                   last time the record was enriched (NVD score revision,
+ *                   CISA KEV addition, etc.) and shifts with "today" so the
+ *                   dashboard never goes empty, even when live feeds are
+ *                   unreachable for extended periods.
  */
 
 import type {
@@ -52,7 +51,7 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "Microsoft Office SharePoint 关键功能缺少身份验证，未经身份验证的攻击者可通过网络提升权限。补丁发布前已被在野利用。",
       cvssScore: 9.8,
-      updatedAt: "2026-07-28T00:00:00.000Z",
+      updatedAt: daysAgoIso(0),
       affectedProducts: ["SharePoint Server 2019", "SharePoint Server Subscription Edition"],
       cweIds: ["CWE-306"],
       exploited: true,
@@ -73,7 +72,7 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "AD FS 访问控制粒度不足，低权限已认证攻击者可在本地提升至管理员权限。已被在野利用，由微软 DART 事件响应团队发现。",
       cvssScore: 7.8,
-      updatedAt: "2026-07-27T00:00:00.000Z",
+      updatedAt: daysAgoIso(1),
       affectedProducts: ["Windows Server 2019", "Windows Server 2022", "Windows Server 2025"],
       cweIds: ["CWE-1220"],
       exploited: true,
@@ -93,7 +92,7 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "Windows VMSwitch 中存在释放后重用漏洞，已认证攻击者可通过网络提升权限。攻击者可在来宾虚拟机内运行代码，向 Hyper-V 虚拟交换机发送特制网络请求以逃逸虚拟机边界。",
       cvssScore: 9.9,
-      updatedAt: "2026-07-26T00:00:00.000Z",
+      updatedAt: daysAgoIso(2),
       affectedProducts: ["Windows Server 2022", "Windows Server 2025"],
       cweIds: ["CWE-416"],
       exploited: false,
@@ -112,7 +111,7 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "Windows RDP 中存在使用未初始化资源漏洞，未经身份验证的攻击者可通过网络执行代码。可利用于禁用网络级身份验证 (NLA) 的系统。",
       cvssScore: 9.8,
-      updatedAt: "2026-07-25T00:00:00.000Z",
+      updatedAt: daysAgoIso(3),
       affectedProducts: ["Windows Server 2019", "Windows Server 2022"],
       cweIds: ["CWE-908"],
       exploited: false,
@@ -131,7 +130,7 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "Windows DHCP 服务器中存在基于堆的缓冲区溢出漏洞，未经身份验证的攻击者可通过发送特制 DHCP 数据包在网络中执行代码。",
       cvssScore: 9.8,
-      updatedAt: "2026-07-24T00:00:00.000Z",
+      updatedAt: daysAgoIso(4),
       affectedProducts: ["Windows Server 2019", "Windows Server 2022", "Windows Server 2025"],
       cweIds: ["CWE-122"],
       exploited: false,
@@ -150,7 +149,7 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "Windows Server 网络驱动中存在竞态条件漏洞，未经身份验证的攻击者可通过发送特制网络数据包在网络中执行代码。",
       cvssScore: 9.8,
-      updatedAt: "2026-07-28T00:00:00.000Z",
+      updatedAt: daysAgoIso(0),
       affectedProducts: ["Windows Server 2022", "Windows Server 2025"],
       cweIds: ["CWE-362"],
       exploited: false,
@@ -169,7 +168,7 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "Microsoft Office SharePoint 中存在不可信数据反序列化漏洞，未经身份验证的攻击者可通过发送特制 XML 请求在网络中执行代码。曾在 Pwn2Own 柏林大赛上演示。",
       cvssScore: 9.8,
-      updatedAt: "2026-07-27T00:00:00.000Z",
+      updatedAt: daysAgoIso(5),
       affectedProducts: ["SharePoint Server 2019", "SharePoint Server Subscription Edition"],
       cweIds: ["CWE-502"],
       exploited: false,
@@ -188,7 +187,7 @@ function buildSampleVulnerabilities(): Vulnerability[] {
       descriptionZh:
         "Windows BitLocker 防护机制失效，拥有物理访问权限的未经身份验证攻击者可绕过 BitLocker 设备加密并访问加密数据。补丁发布前已被公开披露。",
       cvssScore: 6.1,
-      updatedAt: "2026-07-26T00:00:00.000Z",
+      updatedAt: daysAgoIso(6),
       affectedProducts: ["Windows Server 2022", "Windows Server 2025"],
       cweIds: ["CWE-693"],
       exploited: false,
@@ -227,7 +226,7 @@ function buildSampleAdvisories(): Advisory[] {
       titleEn: "July Security Update Release: 622 Vulnerabilities Patched",
       organization: "MSRC",
       publishedDate: PATCH_TUESDAY,
-      updatedAt: "2026-07-28T00:00:00.000Z",
+      updatedAt: daysAgoIso(0),
       type: "security_update",
       summary:
         "微软发布 2026 年 7 月安全更新，共修复 622 个漏洞，其中 63 个被评为严重，多个 Windows Server 组件受影响。包含 2 个已被在野利用的零日漏洞。",
@@ -241,7 +240,7 @@ function buildSampleAdvisories(): Advisory[] {
       titleEn: "CISA Adds 2 Windows Server KEV Vulnerabilities",
       organization: "CISA",
       publishedDate: PATCH_TUESDAY,
-      updatedAt: "2026-07-27T00:00:00.000Z",
+      updatedAt: daysAgoIso(1),
       type: "vuln_alert",
       summary:
         "CISA 已知被利用漏洞目录新增 CVE-2026-56155 (AD FS) 和 CVE-2026-56164 (SharePoint Server) 两个漏洞，要求联邦机构在指定日期前完成修复。",
@@ -254,8 +253,8 @@ function buildSampleAdvisories(): Advisory[] {
       title: "CNVD 2026 年第 27 期漏洞周报",
       titleEn: "CNVD Weekly Vulnerability Bulletin — Week 27, 2026",
       organization: "CNVD",
-      publishedDate: "2026-07-30T00:00:00.000Z",
-      updatedAt: "2026-07-30T00:00:00.000Z",
+      publishedDate: daysAgoIso(2),
+      updatedAt: daysAgoIso(2),
       type: "security_bulletin",
       summary:
         "本周 CNVD 共收集整理漏洞 142 个，其中高危漏洞 38 个，涉及多个国产化与开源组件，建议相关单位尽快排查修复。",
@@ -273,7 +272,7 @@ function buildSampleKnowledge(): KnowledgeArticle[] {
       title: "KB5082142: Windows Server 2022 累积安全更新",
       titleEn: "KB5082142: Windows Server 2022 Cumulative Security Update",
       type: "kb_article",
-      updatedAt: "2026-07-28T00:00:00.000Z",
+      updatedAt: daysAgoIso(3),
       summary:
         "介绍 2026 年 4 月 Windows Server 2022 累积安全更新（KB5082142，OS 内部版本 20348.5020），包含安全修复、已知问题及部署步骤。",
       summaryEn:
@@ -286,7 +285,7 @@ function buildSampleKnowledge(): KnowledgeArticle[] {
       title: "Windows Server 2025 安全基线配置指南",
       titleEn: "Windows Server 2025 Security Baseline Configuration Guide",
       type: "security_baseline",
-      updatedAt: "2026-07-25T00:00:00.000Z",
+      updatedAt: daysAgoIso(5),
       summary:
         "面向 Windows Server 2025 的官方安全基线，通过 OSConfig 部署，涵盖账户策略、审计策略、事件日志与服务最小化等 200+ 项配置。",
       summaryEn:
@@ -299,7 +298,7 @@ function buildSampleKnowledge(): KnowledgeArticle[] {
       title: "关闭不必要的端口与服务：Server 加固实践",
       titleEn: "Disabling Unnecessary Ports and Services: Server Hardening Practices",
       type: "hardening_guide",
-      updatedAt: "2026-07-23T00:00:00.000Z",
+      updatedAt: daysAgoIso(7),
       summary:
         "梳理 Windows Server 常见系统服务与暴露端口（SMB/RDP/WinRM），提供微软官方分角色关闭清单与安全配置建议。",
       summaryEn:
@@ -311,22 +310,22 @@ function buildSampleKnowledge(): KnowledgeArticle[] {
 }
 
 function buildSampleLandscape(): ThreatLandscape {
-  const series = Array.from({ length: 7 }).map((_, i) => {
-    const offset = 6 - i;
-    const seed = (offset * 7) % 5;
-    const critical = (seed + 1) % 3;
-    const high = (seed + 2) % 4;
-    const medium = (seed + 3) % 5;
-    const low = (seed + 1) % 2;
-    return {
-      date: daysAgoDate(offset),
-      critical,
-      high,
-      medium,
-      low,
-      total: critical + high + medium + low,
-    };
-  });
+  const series = [
+    { offset: 6, critical: 0, high: 0, medium: 1, low: 0 },
+    { offset: 5, critical: 1, high: 0, medium: 0, low: 0 },
+    { offset: 4, critical: 1, high: 0, medium: 0, low: 0 },
+    { offset: 3, critical: 1, high: 0, medium: 0, low: 0 },
+    { offset: 2, critical: 1, high: 0, medium: 0, low: 0 },
+    { offset: 1, critical: 0, high: 1, medium: 0, low: 0 },
+    { offset: 0, critical: 2, high: 0, medium: 0, low: 0 },
+  ].map(({ offset, critical, high, medium, low }) => ({
+    date: daysAgoDate(offset),
+    critical,
+    high,
+    medium,
+    low,
+    total: critical + high + medium + low,
+  }));
 
   return {
     series,

@@ -132,7 +132,7 @@ async function collectLiveVulnerabilities(): Promise<Vulnerability[]> {
         affectedProducts: e.affectedProducts.length ? e.affectedProducts : ["Windows Server"],
         cweIds: e.cweIds,
         exploited: kevMap.has(e.cveId),
-        publishedDate: new Date().toISOString(),
+        publishedDate: e.published ?? new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         remediation: "",
         sources: { NVD: e.sourceUrl },
