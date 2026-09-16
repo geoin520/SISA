@@ -94,6 +94,12 @@ function sevLabel(s: string) {
   return map[s] ?? s;
 }
 
+/** Format CVSS score — "—" when unknown/0, per SISA skill spec. */
+function fmtCvss(score: number): string {
+  if (!score || score <= 0) return "—";
+  return score.toFixed(1);
+}
+
 function advisoryTypeLabel(type: string) {
   const map: Record<string, string> = {
     security_update: "安全更新",
@@ -111,6 +117,13 @@ function knowledgeTypeLabel(type: string) {
     best_practice: "最佳实践",
   };
   return map[type] ?? type;
+}
+
+function withinLastDays(iso: string | undefined, days: number): boolean {
+  if (!iso) return false;
+  const t = new Date(iso).getTime();
+  if (isNaN(t)) return false;
+  return t >= Date.now() - days * 24 * 60 * 60 * 1000;
 }
 
 /* ─── sub-components ────────────────────────────────────── */
@@ -184,6 +197,14 @@ export function DailyDigestEmail({
   const series = data.landscape.series;
   const typeDist = data.landscape.typeDistribution;
   const insight = data.landscape.insight;
+
+  // KEV recent additions — filter exploited vulns added in last 7 days
+  const kevRecentAdditions = data.vulnerabilities
+    .filter((v) => v.exploited && withinLastDays(v.updatedAt || v.publishedDate, 7))
+    .slice(0, 5);
+
+  // Source status for display
+  const sourceStatus = data.sourceStatus || [];
 
   const today = new Date().toLocaleDateString("zh-CN", {
     year: "numeric",
@@ -286,6 +307,29 @@ export function DailyDigestEmail({
                 </tr>
               </tbody>
             </table>
+
+            {/* KEV catalog stats — when available */}
+            {data.stats.kevTotal !== undefined && (
+              <table style={kevStatTable} cellPadding={0} cellSpacing={0}>
+                <tbody>
+                  <tr>
+                    <td style={kevStatTd}>
+                      <Text style={kevStatLabel}>
+                        🔴 CISA KEV 目录（在野利用漏洞清单）
+                      </Text>
+                      <Text style={kevStatValue}>
+                        共 <strong>{data.stats.kevTotal}</strong> 个已知在野利用漏洞
+                        {data.stats.kevVersion && (
+                          <>
+                            {" "}· 目录版本 <strong>{data.stats.kevVersion}</strong>
+                          </>
+                        )}
+                      </Text>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            )}
           </Section>
 
           <Hr style={hr} />
@@ -317,7 +361,7 @@ export function DailyDigestEmail({
                       {sevLabel(v.severity)}
                     </span>
                     <span style={cvssBadge}>
-                      CVSS {v.cvssScore.toFixed(1)}
+                      CVSS {fmtCvss(v.cvssScore)}
                     </span>
                     {v.exploited && (
                       <span style={exploitedBadge}>⚠ 已发现在野利用</span>
@@ -387,6 +431,84 @@ export function DailyDigestEmail({
                 CISA KEV Catalog · 点击「详情」查看官方原始页面
               </Text>
             )}
+          </Section>
+
+          <Hr style={hr} />
+
+          {/* ═════ KEV RECENT ADDITIONS ═════ */}
+          {kevRecentAdditions.length > 0 && (
+            <Section style={sectionPadding}>
+              <SectionHeader
+                icon="⚠️"
+                title="KEV 新增在野利用漏洞"
+                subtitle="CISA Known Exploited Vulnerabilities — Recent Additions"
+                description="以下漏洞已被 CISA 确认存在在野利用，请优先修复。CISA KEV 目录每日更新，是威胁情报的高置信度来源。"
+              />
+
+              <table style={kevTable} cellPadding={0} cellSpacing={0}>
+                <thead>
+                  <tr>
+                    <th style={kevThCve}>CVE 编号</th>
+                    <th style={kevThProduct}>受影响产品</th>
+                    <th style={kevThDate}>加入日期</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {kevRecentAdditions.map((v) => (
+                    <tr key={v.cveId}>
+                      <td style={kevTdCve}>
+                        <span style={{ fontWeight: 700, color: C.critical }}>
+                          {v.cveId}
+                        </span>
+                      </td>
+                      <td style={kevTdProduct}>
+                        {v.affectedProducts.slice(0, 2).join("、")}
+                        {v.affectedProducts.length > 2 && " 等"}
+                      </td>
+                      <td style={kevTdDate}>
+                        {fmtDate(v.updatedAt || v.publishedDate)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Section>
+          )}
+
+          {kevRecentAdditions.length > 0 && <Hr style={hr} />}
+
+          {/* ═════ SECURITY RECOMMENDATIONS ═════ */}
+          <Section style={sectionPadding}>
+            <SectionHeader
+              icon="🛡️"
+              title="今日安全建议"
+              subtitle="Daily Security Recommendations"
+              description="基于当前威胁态势的优先行动建议，帮助您高效分配安全运维资源。"
+            />
+
+            <Section style={recommendCard}>
+              <Text style={recommendTitle}>🔴 紧急：优先修复在野利用漏洞</Text>
+              <Text style={recommendText}>
+                确认环境中是否存在 KEV 目录中的漏洞。已知在野利用漏洞是攻击者的首选目标，
+                建议在 72 小时内完成修复或部署缓解措施。
+              </Text>
+            </Section>
+
+            <Section style={recommendCard}>
+              <Text style={recommendTitle}>🟡 重要：安装最新安全更新</Text>
+              <Text style={recommendText}>
+                及时安装微软月度安全更新（Patch Tuesday）。关键基础设施服务器
+                建议启用 WSUS 或 SCCM 进行集中补丁管理，缩短漏洞暴露窗口。
+              </Text>
+            </Section>
+
+            <Section style={recommendCard}>
+              <Text style={recommendTitle}>🟢 建议：强化基线配置</Text>
+              <Text style={recommendText}>
+                参照微软安全基线（Security Baseline）检查组策略配置，
+                禁用不必要的服务和端口，启用攻击面减少规则（ASR）和 Defender for Identity。
+              </Text>
+            </Section>
           </Section>
 
           <Hr style={hr} />
@@ -563,6 +685,70 @@ export function DailyDigestEmail({
           </Section>
 
           <Hr style={hr} />
+
+          {/* ═════ DATA SOURCE STATUS ═════ */}
+          {sourceStatus.length > 0 && (
+            <Section style={sectionPadding}>
+              <SectionHeader
+                icon="📡"
+                title="数据源状态"
+                subtitle="Data Source Status"
+                description="各权威数据源的实时采集状态，透明展示数据可信度与覆盖范围。"
+              />
+
+              <table style={sourceTable} cellPadding={0} cellSpacing={0}>
+                <thead>
+                  <tr>
+                    <th style={sourceThName}>数据源</th>
+                    <th style={sourceThStatus}>状态</th>
+                    <th style={sourceThRecords}>记录数</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sourceStatus.map((s) => (
+                    <tr key={s.source}>
+                      <td style={sourceTdName}>{s.source}</td>
+                      <td style={sourceTdStatus}>
+                        <span
+                          style={{
+                            ...sourceStatusBadge,
+                            color:
+                              s.status === "ok"
+                                ? "#059669"
+                                : s.status === "unreachable"
+                                ? "#D13438"
+                                : C.muted,
+                            backgroundColor:
+                              s.status === "ok"
+                                ? "#D1FAE5"
+                                : s.status === "unreachable"
+                                ? "#FEE2E2"
+                                : "#F3F4F6",
+                          }}
+                        >
+                          {s.status === "ok"
+                            ? "✓ 正常"
+                            : s.status === "unreachable"
+                            ? "✕ 未达"
+                            : "— 未接入"}
+                        </span>
+                      </td>
+                      <td style={sourceTdRecords}>
+                        {s.records !== undefined ? s.records : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <Text style={sourceNote}>
+                注：部分数据源因网络限制或官方 API 限流可能暂时不可达，
+                系统会自动重试并回退到缓存数据。CISA KEV 为每日更新的高置信度来源。
+              </Text>
+            </Section>
+          )}
+
+          {sourceStatus.length > 0 && <Hr style={hr} />}
 
           {/* ═════ FOOTER ═════ */}
           <Section style={footerSection}>
@@ -1056,6 +1242,210 @@ const insightText: React.CSSProperties = {
   lineHeight: 1.6,
   margin: "0",
 };
+
+/* ─── KEV stats bar ─────────────────────────────────────── */
+
+const kevStatTable: React.CSSProperties = {
+  width: "100%",
+  backgroundColor: "#FEF2F2",
+  border: "1px solid #FECACA",
+  borderRadius: "8px",
+  borderCollapse: "collapse",
+  marginTop: "12px",
+};
+
+const kevStatTd: React.CSSProperties = {
+  padding: "10px 14px",
+  textAlign: "left" as const,
+};
+
+const kevStatLabel: React.CSSProperties = {
+  margin: "0 0 2px",
+  fontSize: "12px",
+  fontWeight: 600,
+  color: C.critical,
+};
+
+const kevStatValue: React.CSSProperties = {
+  margin: "0",
+  fontSize: "13px",
+  color: C.ink,
+};
+
+/* ─── KEV table ─────────────────────────────────────────── */
+
+const kevTable: React.CSSProperties = {
+  width: "100%",
+  borderCollapse: "collapse",
+  backgroundColor: C.white,
+  border: `1px solid ${C.border}`,
+  borderRadius: "8px",
+  overflow: "hidden",
+};
+
+const kevThCve: React.CSSProperties = {
+  padding: "10px 12px",
+  textAlign: "left" as const,
+  fontSize: "12px",
+  fontWeight: 600,
+  color: C.muted,
+  backgroundColor: C.subtleBg,
+  borderBottom: `1px solid ${C.border}`,
+  width: "35%",
+};
+
+const kevThProduct: React.CSSProperties = {
+  padding: "10px 12px",
+  textAlign: "left" as const,
+  fontSize: "12px",
+  fontWeight: 600,
+  color: C.muted,
+  backgroundColor: C.subtleBg,
+  borderBottom: `1px solid ${C.border}`,
+  width: "45%",
+};
+
+const kevThDate: React.CSSProperties = {
+  padding: "10px 12px",
+  textAlign: "right" as const,
+  fontSize: "12px",
+  fontWeight: 600,
+  color: C.muted,
+  backgroundColor: C.subtleBg,
+  borderBottom: `1px solid ${C.border}`,
+  width: "20%",
+};
+
+const kevTdCve: React.CSSProperties = {
+  padding: "10px 12px",
+  fontSize: "13px",
+  borderBottom: `1px solid ${C.border}`,
+  fontFamily:
+    'SFMono-Regular, Consolas, "Liberation Mono", Menlo, Courier, monospace',
+};
+
+const kevTdProduct: React.CSSProperties = {
+  padding: "10px 12px",
+  fontSize: "12px",
+  color: C.ink,
+  borderBottom: `1px solid ${C.border}`,
+};
+
+const kevTdDate: React.CSSProperties = {
+  padding: "10px 12px",
+  fontSize: "12px",
+  color: C.muted,
+  textAlign: "right" as const,
+  borderBottom: `1px solid ${C.border}`,
+};
+
+/* ─── Recommendation cards ──────────────────────────────── */
+
+const recommendCard: React.CSSProperties = {
+  backgroundColor: C.cardBg,
+  border: `1px solid ${C.border}`,
+  borderRadius: "10px",
+  padding: "14px 16px",
+  marginBottom: "10px",
+};
+
+const recommendTitle: React.CSSProperties = {
+  margin: "0 0 6px",
+  fontSize: "14px",
+  fontWeight: 600,
+  color: C.ink,
+};
+
+const recommendText: React.CSSProperties = {
+  margin: "0",
+  fontSize: "13px",
+  color: C.muted,
+  lineHeight: 1.6,
+};
+
+/* ─── Source status table ───────────────────────────────── */
+
+const sourceTable: React.CSSProperties = {
+  width: "100%",
+  borderCollapse: "collapse",
+  backgroundColor: C.white,
+  border: `1px solid ${C.border}`,
+  borderRadius: "8px",
+  overflow: "hidden",
+  marginBottom: "12px",
+};
+
+const sourceThName: React.CSSProperties = {
+  padding: "10px 14px",
+  textAlign: "left" as const,
+  fontSize: "12px",
+  fontWeight: 600,
+  color: C.muted,
+  backgroundColor: C.subtleBg,
+  borderBottom: `1px solid ${C.border}`,
+  width: "40%",
+};
+
+const sourceThStatus: React.CSSProperties = {
+  padding: "10px 14px",
+  textAlign: "center" as const,
+  fontSize: "12px",
+  fontWeight: 600,
+  color: C.muted,
+  backgroundColor: C.subtleBg,
+  borderBottom: `1px solid ${C.border}`,
+  width: "35%",
+};
+
+const sourceThRecords: React.CSSProperties = {
+  padding: "10px 14px",
+  textAlign: "right" as const,
+  fontSize: "12px",
+  fontWeight: 600,
+  color: C.muted,
+  backgroundColor: C.subtleBg,
+  borderBottom: `1px solid ${C.border}`,
+  width: "25%",
+};
+
+const sourceTdName: React.CSSProperties = {
+  padding: "10px 14px",
+  fontSize: "13px",
+  fontWeight: 600,
+  color: C.ink,
+  borderBottom: `1px solid ${C.border}`,
+};
+
+const sourceTdStatus: React.CSSProperties = {
+  padding: "10px 14px",
+  textAlign: "center" as const,
+  borderBottom: `1px solid ${C.border}`,
+};
+
+const sourceStatusBadge: React.CSSProperties = {
+  display: "inline-block",
+  fontSize: "11px",
+  fontWeight: 600,
+  padding: "3px 10px",
+  borderRadius: "999px",
+};
+
+const sourceTdRecords: React.CSSProperties = {
+  padding: "10px 14px",
+  fontSize: "13px",
+  color: C.muted,
+  textAlign: "right" as const,
+  borderBottom: `1px solid ${C.border}`,
+};
+
+const sourceNote: React.CSSProperties = {
+  margin: "0",
+  fontSize: "11px",
+  color: C.muted,
+  lineHeight: 1.6,
+};
+
+/* ─── footer ────────────────────────────────────────────── */
 
 const footerSection: React.CSSProperties = {
   padding: "24px 32px 32px",

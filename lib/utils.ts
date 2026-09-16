@@ -71,3 +71,13 @@ export function severityFromScore(score: number): "CRITICAL" | "HIGH" | "MEDIUM"
   if (score >= 4) return "MEDIUM";
   return "LOW";
 }
+
+/**
+ * Format a CVSS score for display.
+ * Returns "—" (em dash) when score is 0 (unknown / not yet scored).
+ * Per the SISA skill spec: CVSS scores must be real; no value = "—", never "0.0".
+ */
+export function formatCvss(score: number): string {
+  if (!score || score <= 0) return "—";
+  return score.toFixed(1);
+}

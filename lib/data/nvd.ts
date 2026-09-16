@@ -17,6 +17,7 @@ interface NvdCve {
   id: string;
   descriptions?: { lang: string; value: string }[];
   published?: string;
+  lastModified?: string;
   metrics?: {
     cvssMetricV31?: {
       cvssData?: { baseScore?: number; baseSeverity?: string };
@@ -31,6 +32,7 @@ interface NvdCve {
 }
 
 interface NvdResponse {
+  totalResults?: number;
   vulnerabilities?: { cve: NvdCve }[];
 }
 
@@ -43,6 +45,12 @@ export interface NvdEnrichment {
   affectedProducts: string[];
   sourceUrl: string;
   published?: string;
+  lastModified?: string;
+}
+
+export interface NvdRecentResult {
+  totalResults: number;
+  items: NvdEnrichment[];
 }
 
 /** Query NVD for a single CVE and return enrichment data. */
@@ -66,30 +74,50 @@ export async function enrichFromNvd(cveId: string): Promise<NvdEnrichment | null
   }
 }
 
-/** Query NVD for CVEs published in the last 7 days, optionally filtered by severity. */
+/**
+ * Query NVD for CVEs published in the last 7 days, filtered by HIGH/CRITICAL severity.
+ *
+ * Uses both `pubStartDate` and `pubEndDate` for a precise 7-day window.
+ * Returns the total result count and up to `resultsPerPage` items.
+ */
 export async function fetchRecentNvdCves(
-  severity?: Severity
-): Promise<NvdEnrichment[]> {
+  severity?: Severity,
+  options?: { days?: number; resultsPerPage?: number }
+): Promise<NvdRecentResult> {
   try {
+    const days = options?.days ?? 7;
+    const resultsPerPage = options?.resultsPerPage ?? 40;
+
+    const end = new Date();
     const start = new Date();
-    start.setDate(start.getDate() - 7);
+    start.setDate(start.getDate() - days);
+
     const params = new URLSearchParams({
-      pubStartDate: `${start.toISOString().slice(0, 19)}.000`,
-      resultsPerPage: "40",
+      pubStartDate: `${start.toISOString().slice(0, 10)}T00:00:00.000`,
+      pubEndDate: `${end.toISOString().slice(0, 10)}T23:59:59.999`,
+      resultsPerPage: String(resultsPerPage),
     });
     if (severity) params.set("cvssV3Severity", severity);
+
     const headers: Record<string, string> = { Accept: "application/json" };
     if (process.env.NVD_API_KEY) headers.apiKey = process.env.NVD_API_KEY;
+
     const res = await fetch(`${NVD_API_BASE}?${params.toString()}`, {
       headers,
       next: { revalidate: Number(process.env.DATA_CACHE_TTL ?? 3600) },
       signal: AbortSignal.timeout(5000),
     });
-    if (!res.ok) return [];
+    if (!res.ok) return { totalResults: 0, items: [] };
     const json = (await res.json()) as NvdResponse;
-    return (json.vulnerabilities ?? []).map((v) => parseNvdCve(v.cve)).filter(Boolean) as NvdEnrichment[];
+    const items = (json.vulnerabilities ?? [])
+      .map((v) => parseNvdCve(v.cve))
+      .filter(Boolean) as NvdEnrichment[];
+    return {
+      totalResults: json.totalResults ?? items.length,
+      items,
+    };
   } catch {
-    return [];
+    return { totalResults: 0, items: [] };
   }
 }
 
@@ -120,6 +148,7 @@ function parseNvdCve(cve: NvdCve): NvdEnrichment {
     affectedProducts,
     sourceUrl: `https://nvd.nist.gov/vuln/detail/${cve.id}`,
     published: cve.published,
+    lastModified: cve.lastModified,
   };
 }
 
@@ -132,7 +161,7 @@ function extractWindowsServerProducts(cve: NvdCve): string[] {
         // cpe:2.3:o:microsoft:windows_server_2022:...
         if (cpe.includes("microsoft:windows_server")) {
           const parts = cpe.split(":");
-          const product = parts[3]?.replace(/_/g, " ") ?? "Windows Server";
+          const product = parts[4]?.replace(/_/g, " ") ?? "Windows Server";
           products.add(product);
         }
       }
@@ -155,6 +184,7 @@ export function applyNvdEnrichment(
     description: enrich.description || vuln.description,
     affectedProducts:
       enrich.affectedProducts.length ? enrich.affectedProducts : vuln.affectedProducts,
+    updatedAt: enrich.lastModified || vuln.updatedAt,
     sources: { ...vuln.sources, NVD: enrich.sourceUrl },
   };
 }

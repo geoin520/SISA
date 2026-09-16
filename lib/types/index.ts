@@ -17,7 +17,8 @@ export interface Vulnerability {
   description: string;
   /** Chinese translation of the description, when available. */
   descriptionZh?: string;
-  /** CVSS v3.x base score (0–10). */
+  /** CVSS v3.x base score (0–10). NaN/unknown represented as 0 in the type,
+   *  but the UI should display "-" when cvssScore === 0. */
   cvssScore: number;
   severity: Severity;
   /** Affected Windows Server products / versions. */
@@ -28,6 +29,8 @@ export interface Vulnerability {
   exploited: boolean;
   /** Known ransomware campaign use, when available. */
   ransomwareCampaignUse?: "Known" | "Unknown";
+  /** Whether the vulnerability was publicly disclosed before a patch was available. */
+  publiclyDisclosed?: boolean;
   publishedDate: string; // ISO date — original publication (e.g. Patch Tuesday)
   /** Last time this record was updated by any source (NVD enrichment, CISA KEV add, etc.). */
   updatedAt?: string; // ISO date
@@ -80,6 +83,10 @@ export interface DashboardStats {
   /** Within the rolling 7-day window. */
   total: number;
   exploitedCount: number;
+  /** CISA KEV catalog total count (when available). */
+  kevTotal?: number;
+  /** CISA KEV catalog version string (e.g. "2026.09.15"). */
+  kevVersion?: string;
   lastUpdated: string; // ISO datetime
 }
 
@@ -117,6 +124,17 @@ export interface ThreatLandscape {
   insightEn?: string;
 }
 
+/** Status of each data source fetch attempt. */
+export interface SourceStatus {
+  source: DataSource;
+  /** "ok" = fetched successfully; "unreachable" = fetch failed / timeout; "not_implemented" = no fetcher */
+  status: "ok" | "unreachable" | "not_implemented";
+  /** Number of records returned (when applicable). */
+  records?: number;
+  /** Error or note (when status !== ok). */
+  note?: string;
+}
+
 /** The full aggregated payload served by the API layer. */
 export interface AggregatedData {
   stats: DashboardStats;
@@ -124,5 +142,7 @@ export interface AggregatedData {
   advisories: Advisory[];
   knowledge: KnowledgeArticle[];
   landscape: ThreatLandscape;
+  /** Per-source fetch status for transparency / "未达" labeling. */
+  sourceStatus: SourceStatus[];
   generatedAt: string; // ISO datetime
 }

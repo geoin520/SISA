@@ -1,24 +1,36 @@
 /**
- * Data aggregator: pulls from MSRC, NVD, CISA and CNVD, normalizes,
+ * Data aggregator: pulls from MSRC, NVD, CISA KEV, CNNVD, CNVD, normalizes,
  * dedupes by CVE id, and computes dashboard stats + threat landscape.
  *
- * Strategy: the curated sample dataset is the always-available baseline.
- * Live records (when reachable) replace sample records by CVE id and are
- * merged so the dashboard never goes empty, even offline.
+ * Strategy: CISA KEV is the most reliable "fresh" source (updated daily,
+ * always reachable). MSRC/NVD live APIs are best-effort and may fail due to
+ * rate limiting or Vercel's 10s timeout. The curated sample dataset is the
+ * always-available baseline for when live feeds are unreachable.
+ *
+ * All sources are fetched in parallel via Promise.allSettled so one failure
+ * never blocks the rest. Each source reports its status via sourceStatus.
  */
 
 import type {
   Advisory,
   AggregatedData,
   DashboardStats,
+  DataSource,
+  SourceStatus,
   ThreatLandscape,
   Vulnerability,
 } from "@/lib/types";
 import { withinLastDays, withinLastHours, severityFromScore, daysAgoDate } from "@/lib/utils";
 import { fetchMsrcUpdates, msrcToVulnerabilities } from "@/lib/data/msrc";
 import { enrichFromNvd, applyNvdEnrichment, fetchRecentNvdCves } from "@/lib/data/nvd";
-import { fetchKevMap, fetchCisaKevAdvisories } from "@/lib/data/cisa";
+import {
+  fetchKevMap,
+  fetchCisaKevAdvisories,
+  fetchKevRecentAsVulnerabilities,
+  fetchKevMeta,
+} from "@/lib/data/cisa";
 import { fetchCnvdAdvisories } from "@/lib/data/cnvd";
+import { fetchCnnvdAdvisories } from "@/lib/data/cnnvd";
 import { buildSampleData } from "@/lib/data/mock";
 import { getCachedAggregatedData, setAggregatedData } from "@/lib/redis";
 
@@ -41,10 +53,114 @@ export async function getAggregatedData(force = false): Promise<AggregatedData> 
 
 async function aggregateData(): Promise<AggregatedData> {
   const sample = buildSampleData();
+  const sourceStatus: SourceStatus[] = [];
 
-  // --- Vulnerabilities ---------------------------------------------------
-  const liveVulns = await collectLiveVulnerabilities();
+  // --- Fetch all sources in parallel ---------------------------------------
+  const [
+    msrcResult,
+    nvdCriticalResult,
+    nvdHighResult,
+    kevVulnsResult,
+    kevMetaResult,
+    kevAdvisoriesResult,
+    cnvdAdvisoriesResult,
+    cnnvdAdvisoriesResult,
+  ] = await Promise.allSettled([
+    fetchMsrcSafe(),
+    fetchRecentNvdCves("CRITICAL", { resultsPerPage: 20 }),
+    fetchRecentNvdCves("HIGH", { resultsPerPage: 20 }),
+    fetchKevRecentAsVulnerabilities(7),
+    fetchKevMeta(),
+    fetchCisaKevAdvisories(7),
+    fetchCnvdAdvisories(),
+    fetchCnnvdAdvisories(),
+  ]);
+
+  // --- Source status tracking ---------------------------------------------
+  sourceStatus.push(buildStatus("MSRC", msrcResult, "records"));
+  sourceStatus.push(
+    buildStatus("NVD", nvdCriticalResult, "items")
+  );
+  sourceStatus.push(
+    buildStatus("CISA", kevVulnsResult, "length")
+  );
+  sourceStatus.push(
+    buildStatus("CNVD", cnvdAdvisoriesResult, "length")
+  );
+  sourceStatus.push(
+    buildStatus("CNNVD", cnnvdAdvisoriesResult, "length")
+  );
+
+  // --- Build vulnerability list -------------------------------------------
+  const kevMap = await fetchKevMap().catch(() => new Map());
+  const liveVulns: Vulnerability[] = [];
+  const seen = new Set<string>();
+
+  // 1) KEV recent additions — these are fresh daily data
+  if (kevVulnsResult.status === "fulfilled" && kevVulnsResult.value.length > 0) {
+    for (const v of kevVulnsResult.value) {
+      if (seen.has(v.cveId)) continue;
+      seen.add(v.cveId);
+      // Try NVD enrichment for each KEV vuln (best-effort, limited to 3 to stay within timeout)
+      liveVulns.push(v);
+    }
+  }
+
+  // 2) NVD recent CRITICAL + HIGH
+  const nvdItems = [
+    ...(nvdCriticalResult.status === "fulfilled" ? nvdCriticalResult.value.items : []),
+    ...(nvdHighResult.status === "fulfilled" ? nvdHighResult.value.items : []),
+  ];
+  for (const e of nvdItems) {
+    if (seen.has(e.cveId)) continue;
+    seen.add(e.cveId);
+    const isKev = kevMap.has(e.cveId);
+    const kevEntry = kevMap.get(e.cveId);
+    liveVulns.push({
+      cveId: e.cveId,
+      title: e.description.split(". ")[0] || e.cveId,
+      description: e.description,
+      cvssScore: e.cvssScore,
+      severity: e.severity,
+      affectedProducts: e.affectedProducts.length ? e.affectedProducts : ["Windows Server"],
+      cweIds: e.cweIds,
+      exploited: isKev,
+      ransomwareCampaignUse: kevEntry?.knownRansomwareCampaignUse === "Known" ? "Known" : isKev ? "Unknown" : undefined,
+      publishedDate: e.published ?? new Date().toISOString(),
+      updatedAt: e.lastModified || new Date().toISOString(),
+      remediation: "",
+      sources: { NVD: e.sourceUrl, ...(isKev ? { CISA: `https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=${encodeURIComponent(e.cveId)}` } : {}) },
+    });
+  }
+
+  // 3) MSRC top 3 (enriched with NVD)
+  if (msrcResult.status === "fulfilled" && msrcResult.value.length > 0) {
+    const msrcRecords = msrcResult.value.slice(0, 3);
+    const enriched = await Promise.allSettled(
+      msrcRecords.map(async (rec) => {
+        const vuln = msrcToVulnerabilities([rec])[0];
+        const enrich = await enrichFromNvd(rec.cveId);
+        const nvdVuln = applyNvdEnrichment(vuln, enrich);
+        const kev = kevMap.get(rec.cveId);
+        if (kev) {
+          return applyKev(nvdVuln, kev);
+        }
+        return nvdVuln;
+      })
+    );
+    for (const r of enriched) {
+      if (r.status === "fulfilled" && r.value.cveId) {
+        if (!seen.has(r.value.cveId)) {
+          seen.add(r.value.cveId);
+          liveVulns.push(r.value);
+        }
+      }
+    }
+  }
+
+  // --- Merge live over sample --------------------------------------------
   const mergedVulns = mergeVulnerabilities(sample.vulnerabilities, liveVulns);
+
   // 7-day window filters on updatedAt (last source enrichment), not publishedDate
   // (original Patch Tuesday), because a CVE published 12 days ago may still be
   // active this week due to KEV additions or CVSS re-scoring.
@@ -60,9 +176,20 @@ async function aggregateData(): Promise<AggregatedData> {
         new Date(a.updatedAt ?? a.publishedDate).getTime()
   );
 
-  // --- Advisories --------------------------------------------------------
-  const liveAdvisories = await collectLiveAdvisories();
-  const advisories = dedupeAdvisories([...liveAdvisories, ...sample.advisories])
+  // --- Advisories ---------------------------------------------------------
+  const kevAdvisories =
+    kevAdvisoriesResult.status === "fulfilled" ? kevAdvisoriesResult.value : [];
+  const cnvdAdvisories =
+    cnvdAdvisoriesResult.status === "fulfilled" ? cnvdAdvisoriesResult.value : [];
+  const cnnvdAdvisories =
+    cnnvdAdvisoriesResult.status === "fulfilled" ? cnnvdAdvisoriesResult.value : [];
+
+  const advisories = dedupeAdvisories([
+    ...kevAdvisories,
+    ...cnnvdAdvisories,
+    ...cnvdAdvisories,
+    ...sample.advisories,
+  ])
     .filter((a) => withinLastDays(a.updatedAt ?? a.publishedDate, 7))
     .sort(
       (a, b) =>
@@ -70,10 +197,14 @@ async function aggregateData(): Promise<AggregatedData> {
         new Date(a.updatedAt ?? a.publishedDate).getTime()
     );
 
-  // --- Stats -------------------------------------------------------------
+  // --- Stats --------------------------------------------------------------
   const stats = computeStats(within7);
+  if (kevMetaResult.status === "fulfilled") {
+    stats.kevTotal = kevMetaResult.value.count;
+    stats.kevVersion = kevMetaResult.value.version;
+  }
 
-  // --- Landscape ---------------------------------------------------------
+  // --- Landscape ----------------------------------------------------------
   const landscape = computeLandscape(within7, sample.landscape);
 
   return {
@@ -82,67 +213,43 @@ async function aggregateData(): Promise<AggregatedData> {
     advisories,
     knowledge: sample.knowledge,
     landscape,
+    sourceStatus,
     generatedAt: new Date().toISOString(),
   };
 }
 
-/** Pull vulnerabilities from MSRC (enriched by NVD), plus NVD's own recent feed. */
-async function collectLiveVulnerabilities(): Promise<Vulnerability[]> {
-  const out: Vulnerability[] = [];
-  const seen = new Set<string>();
+/* ─── helpers ───────────────────────────────────────────────────── */
 
-  // 1) MSRC list -> enrich each with NVD CVSS/CWE (concurrent, limited to 3).
+async function fetchMsrcSafe() {
   try {
-    const msrcRecords = await fetchMsrcUpdates();
-    const kevMap = await fetchKevMap();
-    // Limit to 3 and enrich concurrently to stay within Vercel's 10s timeout.
-    const top3 = msrcRecords.slice(0, 3);
-    const enriched = await Promise.allSettled(
-      top3.map(async (rec) => {
-        const vuln = msrcToVulnerabilities([rec])[0];
-        const enrich = await enrichFromNvd(rec.cveId);
-        return applyKev(applyNvdEnrichment(vuln, enrich), kevMap.get(rec.cveId));
-      })
-    );
-    for (const r of enriched) {
-      if (r.status === "fulfilled" && r.value.cvssScore) {
-        if (!seen.has(r.value.cveId)) {
-          seen.add(r.value.cveId);
-          out.push(r.value);
-        }
-      }
-    }
+    return await fetchMsrcUpdates();
   } catch {
-    /* swallow — sample data covers us */
+    return [];
   }
+}
 
-  // 2) NVD's recent Windows-Server CVEs (best-effort).
-  try {
-    const recent = await fetchRecentNvdCves("CRITICAL");
-    const kevMap = await fetchKevMap();
-    for (const e of recent) {
-      if (seen.has(e.cveId)) continue;
-      seen.add(e.cveId);
-      out.push({
-        cveId: e.cveId,
-        title: e.description.split(". ")[0] || e.cveId,
-        description: e.description,
-        cvssScore: e.cvssScore,
-        severity: e.severity,
-        affectedProducts: e.affectedProducts.length ? e.affectedProducts : ["Windows Server"],
-        cweIds: e.cweIds,
-        exploited: kevMap.has(e.cveId),
-        publishedDate: e.published ?? new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        remediation: "",
-        sources: { NVD: e.sourceUrl },
-      });
+function buildStatus(
+  source: DataSource,
+  result: PromiseSettledResult<unknown>,
+  countKey?: string
+): SourceStatus {
+  if (result.status === "rejected") {
+    return { source, status: "unreachable", note: String(result.reason).slice(0, 100) };
+  }
+  const value = result.value;
+  if (Array.isArray(value)) {
+    return { source, status: "ok", records: value.length };
+  }
+  if (value && countKey && typeof value === "object" && countKey in (value as Record<string, unknown>)) {
+    const count = (value as Record<string, unknown>)[countKey];
+    if (typeof count === "number") {
+      return { source, status: "ok", records: count };
     }
-  } catch {
-    /* swallow */
+    if (Array.isArray(count)) {
+      return { source, status: "ok", records: count.length };
+    }
   }
-
-  return out;
+  return { source, status: "ok" };
 }
 
 /** Merge live vulnerabilities over sample ones (live wins by CVE id). */
@@ -170,6 +277,7 @@ function mergeVulnerabilities(sample: Vulnerability[], live: Vulnerability[]): V
         sources: { ...existing.sources, ...v.sources },
         affectedProducts:
           v.affectedProducts.length ? v.affectedProducts : existing.affectedProducts,
+        exploited: existing.exploited || v.exploited,
       });
     } else {
       map.set(v.cveId, v);
@@ -180,9 +288,8 @@ function mergeVulnerabilities(sample: Vulnerability[], live: Vulnerability[]): V
 
 function applyKev(
   vuln: Vulnerability,
-  kev: import("@/lib/data/cisa").KevEntry | undefined
+  kev: { cveID: string; dateAdded: string; knownRansomwareCampaignUse: string; shortDescription?: string; requiredAction?: string }
 ): Vulnerability {
-  if (!kev) return vuln;
   // KEV addition counts as an update event — bump updatedAt so the record
   // stays within the 7-day window even if publishedDate is older.
   const kevDate = new Date(kev.dateAdded).toISOString();
@@ -197,29 +304,14 @@ function applyKev(
     updatedAt,
     ransomwareCampaignUse:
       kev.knownRansomwareCampaignUse === "Known" ? "Known" : "Unknown",
+    remediation: kev.requiredAction || vuln.remediation,
     sources: {
       ...vuln.sources,
-      CISA: `https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=${encodeURIComponent(
+      CISA: `https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=${encodeURIComponent(
         kev.cveID
       )}`,
     },
   };
-}
-
-/** Combine CISA KEV additions + CNVD bulletins. */
-async function collectLiveAdvisories(): Promise<Advisory[]> {
-  const out: Advisory[] = [];
-  try {
-    out.push(...(await fetchCisaKevAdvisories()));
-  } catch {
-    /* swallow */
-  }
-  try {
-    out.push(...(await fetchCnvdAdvisories()));
-  } catch {
-    /* swallow */
-  }
-  return out;
 }
 
 function dedupeAdvisories(list: Advisory[]): Advisory[] {
@@ -374,6 +466,7 @@ export async function getDigestData24h(): Promise<AggregatedData> {
     advisories: advisories24h,
     knowledge: full.knowledge,
     landscape: full.landscape,
+    sourceStatus: full.sourceStatus,
     generatedAt: new Date().toISOString(),
   };
 }
